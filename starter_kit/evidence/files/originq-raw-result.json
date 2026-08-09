@@ -1,0 +1,11 @@
+{
+  "task_id": "268D2ECC5B148D02E18A952BED5CF114",
+  "backend": "WK_C180",
+  "backend_check": "available",
+  "probabilities": {
+    "00": 0.0190905,
+    "01": 0.201321,
+    "10": 0.6169739,
+    "11": 0.1626144
+  }
+}

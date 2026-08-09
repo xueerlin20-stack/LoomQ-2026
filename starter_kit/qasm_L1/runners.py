@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import re
 import tempfile
-import time
 from math import floor
 from pathlib import Path
 from typing import Dict, Optional, Tuple
@@ -21,9 +20,13 @@ except ImportError:
 
 
 def _measurement_width(native_program: str) -> Optional[int]:
-    widths = [int(value) for value in re.findall(r"\bcreg\s+\w+\[(\d+)\]", native_program)]
+    widths = [
+        int(value) for value in re.findall(r"\bcreg\s+\w+\[(\d+)\]", native_program)
+    ]
     if not widths:
-        widths = [int(value) for value in re.findall(r"\bbit\[(\d+)\]\s+\w+", native_program)]
+        widths = [
+            int(value) for value in re.findall(r"\bbit\[(\d+)\]\s+\w+", native_program)
+        ]
     if not widths:
         match = re.search(r"^CREG\s+(\d+)\s*$", native_program, re.MULTILINE)
         widths = [int(match.group(1))] if match else []
@@ -47,13 +50,17 @@ def _normalize_bitstring(raw_key, *, width: Optional[int], reverse: bool) -> str
     elif key.isdigit():
         binary = bin(int(key))[2:]
     else:
-        raise RuntimeError(f"quantum backend returned a non-binary result key: {raw_key}")
+        raise RuntimeError(
+            f"quantum backend returned a non-binary result key: {raw_key}"
+        )
     if width is not None:
         binary = binary.zfill(width)
     return binary[::-1] if reverse else binary
 
 
-def _little_endian(counts: Dict[str, int], width: Optional[int] = None) -> Dict[str, int]:
+def _little_endian(
+    counts: Dict[str, int], width: Optional[int] = None
+) -> Dict[str, int]:
     """SDKs report keys with c[0] leftmost; the contract wants it rightmost."""
     return _normalize_counts(counts, width=width, reverse=True)
 
@@ -65,7 +72,9 @@ def _compile_spinq_qasm(native_qasm: str, *, omit_measurements: bool = False):
     source = native_qasm
     if omit_measurements:
         source = "\n".join(
-            line for line in source.splitlines() if not line.lstrip().startswith("measure ")
+            line
+            for line in source.splitlines()
+            if not line.lstrip().startswith("measure ")
         )
         source += "\n"
 
@@ -90,9 +99,9 @@ def _probabilities_to_counts(
     scaled = {key: value * shots / total for key, value in weights.items()}
     counts = {key: floor(value) for key, value in scaled.items()}
     remainder = shots - sum(counts.values())
-    for key in sorted(scaled, key=lambda item: (scaled[item] - counts[item], item), reverse=True)[
-        :remainder
-    ]:
+    for key in sorted(
+        scaled, key=lambda item: (scaled[item] - counts[item], item), reverse=True
+    )[:remainder]:
         counts[key] += 1
     return counts
 
@@ -109,7 +118,9 @@ def run_spinq(native_qasm: str, shots: int) -> ExecutionResult:
     config.configure_shots(shots)
     result = BasicSimulatorBackend().execute(ir, config)
     counts = _little_endian(dict(result.counts), _measurement_width(native_qasm))
-    return ExecutionResult("spinq", f"local-spinq-{uuid4().hex}", shots, counts, utc_now())
+    return ExecutionResult(
+        "spinq", f"local-spinq-{uuid4().hex}", shots, counts, utc_now()
+    )
 
 
 def run_spinq_real(
@@ -151,7 +162,9 @@ def run_spinq_real(
         counts = _little_endian(raw_counts, width)
         counts_source = "measurement_counts"
     elif getattr(result, "probabilities", None):
-        probability_counts = _probabilities_to_counts(result.probabilities, shots, width=width)
+        probability_counts = _probabilities_to_counts(
+            result.probabilities, shots, width=width
+        )
         counts = _little_endian(probability_counts, width)
         counts_source = "probabilities"
     else:
@@ -190,10 +203,14 @@ def run_braket(native_qasm: str, shots: int) -> ExecutionResult:
     braket3 = native_qasm.replace('include "stdgates.inc";', "")
     task = LocalSimulator().run(OpenQASMProgram(source=braket3), shots=shots)
     result = task.result()
-    counts = _little_endian(dict(result.measurement_counts), _measurement_width(native_qasm))
+    counts = _little_endian(
+        dict(result.measurement_counts), _measurement_width(native_qasm)
+    )
     task_metadata = getattr(result, "task_metadata", None)
     job_id = str(getattr(task_metadata, "id", "") or f"local-braket-{uuid4().hex}")
-    return ExecutionResult("braket", job_id, shots, counts, utc_now(), device="LocalSimulator")
+    return ExecutionResult(
+        "braket", job_id, shots, counts, utc_now(), device="LocalSimulator"
+    )
 
 
 def run_braket_real(
@@ -224,7 +241,9 @@ def run_braket_real(
         task = device.run(program, s3_destination_folder, shots=shots)
     submitted_at = utc_now()
     result = task.result()
-    counts = _little_endian(dict(result.measurement_counts), _measurement_width(native_qasm))
+    counts = _little_endian(
+        dict(result.measurement_counts), _measurement_width(native_qasm)
+    )
     job_id = str(getattr(task, "id", "") or "")
     if not job_id:
         raise RuntimeError("AWS Braket task did not contain a traceable task ID")
@@ -287,69 +306,68 @@ def run_originq_real(
     is_amend: bool = True,
     is_mapping: bool = True,
     is_optimization: bool = True,
-    timeout_seconds: float = 21600,
-    poll_interval_seconds: float = 10,
 ) -> ExecutionResult:
-    """Submit OriginIR to Origin Quantum's 72-qubit Wukong QPU."""
+    """Submit transpiled OriginIR to a named Origin Quantum backend via QPanda3."""
     try:
-        from pyqpanda import QCloud, real_chip_type
+        from pyqpanda3.intermediate_compiler import convert_originir_string_to_qprog
+        from pyqpanda3.qcloud import QCloudOptions, QCloudService
     except ImportError as exc:  # pragma: no cover
-        raise RuntimeError("pyqpanda is required for the OriginQ real-QPU path") from exc
+        raise RuntimeError(
+            "pyqpanda3 is required for the OriginQ real-QPU path"
+        ) from exc
 
     if not token:
         raise ValueError("Origin Quantum Cloud API token is required")
 
-    if timeout_seconds <= 0 or poll_interval_seconds <= 0:
-        raise ValueError("OriginQ polling timeout and interval must be positive")
-
-    machine = QCloud()
-    machine.init_qvm(token, True)
+    service = QCloudService(api_key=token)
+    backend_check = "available"
     try:
-        submitted_at = utc_now()
-        job_id = str(machine.async_real_chip_measure(
-            native_qasm,
-            shots,
-            chip_id=real_chip_type.origin_72,
-            is_amend=is_amend,
-            is_mapping=is_mapping,
-            is_optimization=is_optimization,
-            describe="LoomQ L1",
-        ))
-        if not job_id:
-            raise RuntimeError("OriginQ Cloud did not return a traceable task ID")
+        available_backends = service.backends()
+    except RuntimeError as exc:
+        # pyqpanda3 0.3.2 cannot parse the current backend-status response,
+        # which contains numeric status values instead of the older bool array.
+        if "value is not array" not in str(exc):
+            raise
+        backend_check = "sdk_response_incompatible"
+    else:
+        if not available_backends.get("WK_C180", False):
+            raise RuntimeError("OriginQ backend WK_C180 is offline or unavailable")
 
-        deadline = time.monotonic() + timeout_seconds
-        raw_result = None
-        while time.monotonic() < deadline:
-            raw_result = machine.query_task_state(job_id)
-            if not isinstance(raw_result, (list, tuple)) or len(raw_result) < 3:
-                raise RuntimeError("OriginQ Cloud returned an invalid task-state response")
-            state, probability_payload, error_code = raw_result[:3]
-            error_info = raw_result[3] if len(raw_result) > 3 else ""
-            if int(error_code) != 0:
-                raise RuntimeError(f"OriginQ task {job_id} failed: {error_info or error_code}")
-            if int(state) == 3:
-                parsed = machine.parse_probability_result(probability_payload)
-                probabilities = parsed[0] if isinstance(parsed, list) else parsed
-                counts = _probabilities_to_counts(
-                    probabilities, shots, width=_measurement_width(native_qasm)
-                )
-                return ExecutionResult(
-                    "originq_real",
-                    job_id,
-                    shots,
-                    counts,
-                    submitted_at,
-                    device="origin_72",
-                    counts_source="probabilities",
-                    raw_result={
-                        "task_id": job_id,
-                        "query_response": raw_result,
-                        "probabilities": probabilities,
-                    },
-                    metadata={"timestamp_source": "client_submit_utc"},
-                )
-            time.sleep(poll_interval_seconds)
-        raise TimeoutError(f"OriginQ task {job_id} did not complete within {timeout_seconds}s")
-    finally:
-        machine.finalize()
+    program = convert_originir_string_to_qprog(native_qasm)
+    options = QCloudOptions()
+    options.set_amend(is_amend)
+    options.set_mapping(is_mapping)
+    options.set_optimization(is_optimization)
+
+    submitted_at = utc_now()
+    job = service.backend("WK_C180").run(program, shots, options)
+    job_id = str(job.job_id())
+    if not job_id:
+        raise RuntimeError("OriginQ Cloud did not return a traceable task ID")
+
+    try:
+        cloud_result = job.result()
+    except RuntimeError as exc:
+        raise RuntimeError(
+            f"OriginQ job {job_id} was submitted but result retrieval failed: {exc}"
+        ) from exc
+    probabilities = cloud_result.get_probs()
+    counts = _probabilities_to_counts(
+        probabilities, shots, width=_measurement_width(native_qasm)
+    )
+    return ExecutionResult(
+        "originq_real",
+        job_id,
+        shots,
+        counts,
+        submitted_at,
+        device="WK_C180",
+        counts_source="probabilities",
+        raw_result={
+            "task_id": job_id,
+            "backend": "WK_C180",
+            "backend_check": backend_check,
+            "probabilities": probabilities,
+        },
+        metadata={"timestamp_source": "client_submit_utc"},
+    )

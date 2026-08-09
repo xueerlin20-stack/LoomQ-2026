@@ -98,14 +98,30 @@ cp starter_kit/qasm_L1/credentials/originq_token.txt.example \
 
 ### SpinQ Cloud
 
-```bash
-export SPINQ_USERNAME="your-user"
-export SPINQ_PLATFORM="triangulum_vp"
+首次使用时生成 SpinQ RSA 密钥对：
 
+```bash
+ssh-keygen -t rsa -b 2048 -m PEM \
+  -f starter_kit/qasm_L1/credentials/spinq_private_key.pem \
+  -N ""
+chmod 600 starter_kit/qasm_L1/credentials/spinq_private_key.pem
+```
+
+把生成的 `spinq_private_key.pem.pub` 公钥上传到 SpinQ Cloud 账户；
+`spinq_private_key.pem` 私钥只保留在本地。然后将 `your-user` 替换为 SpinQ Cloud
+用户名并运行：
+
+```bash
+SPINQ_USERNAME="your-user" \
+SPINQ_PLATFORM="triangulum_vp" \
 python3 starter_kit/adapter.py starter_kit/circuits/bell.qasm \
   --target spinq --shots 100 --real \
   --output starter_kit/evidence/files
 ```
+
+`triangulum_vp` 是 3 量子比特设备代码；Bell 线路也可以改用 2 量子比特的
+`gemini_vp`。该命令会提交真实量子任务。若需要无噪声模拟，请移除 `--real`，
+此时无需用户名、平台或私钥。
 
 ### AWS Braket QPU
 
@@ -120,6 +136,22 @@ python3 starter_kit/adapter.py starter_kit/circuits/bell.qasm \
 ```
 
 ### OriginQ 悟空
+
+先把真实 Token 写入
+`starter_kit/qasm_L1/credentials/originq_token.txt`，然后运行：
+
+OriginQ 真机使用 `pyqpanda3`，将 `transpile()` 生成的 OriginIR 转换为 QPanda3
+程序，并固定提交到 `WK_C180`。旧的 `pyqpanda==3.8.5` 仍只用于本地
+OriginIR 模拟。
+
+macOS 首次安装还需要 QPanda3 wheel 的系统依赖：
+
+```bash
+brew install libidn2
+python3 -m pip install -r starter_kit/requirements.txt
+```
+
+项目固定使用 `pyqpanda3==0.3.3`；`0.3.2` 无法解析当前云端结果格式。
 
 ```bash
 python3 starter_kit/adapter.py starter_kit/circuits/bell.qasm \

@@ -223,48 +223,127 @@ measure q -> c;
         self.assertEqual(result.counts, {"10": 5})
         self.assertNotIn("stdgates.inc", observed["source"])
 
-    def test_originq_polls_and_preserves_async_task_id(self):
-        observed = {"queries": 0}
+    def test_originq_uses_transpiled_originir_and_named_backend(self):
+        observed = {}
 
-        class ChipType:
-            origin_72 = "wukong-72"
+        class Options:
+            def set_amend(self, value):
+                observed["amend"] = value
 
-        class Cloud:
-            def init_qvm(self, token, enabled):
-                observed["auth"] = (token, enabled)
+            def set_mapping(self, value):
+                observed["mapping"] = value
 
-            def async_real_chip_measure(self, source, shots, **options):
-                observed["submit"] = (source, shots, options)
+            def set_optimization(self, value):
+                observed["optimization"] = value
+
+        class CloudResult:
+            def get_probs(self):
+                return {"00": 0.51, "11": 0.49}
+
+        class Job:
+            def job_id(self):
                 return "ORIGIN-TASK-1"
 
-            def query_task_state(self, _task_id):
-                observed["queries"] += 1
-                if observed["queries"] == 1:
-                    return [1, [], 0, ""]
-                return [3, ['{"key":["00","11"],"value":[0.51,0.49]}'], 0, ""]
+            def result(self):
+                return CloudResult()
 
-            def parse_probability_result(self, _payload):
-                return [{"00": 0.51, "11": 0.49}]
+        class Backend:
+            def run(self, program, shots, options):
+                observed["run"] = (program, shots, options)
+                return Job()
 
-            def finalize(self):
-                observed["finalized"] = True
+        class Service:
+            def __init__(self, api_key):
+                observed["token"] = api_key
 
-        pyqpanda = ModuleType("pyqpanda")
-        pyqpanda.QCloud = Cloud
-        pyqpanda.real_chip_type = ChipType
-        with mock.patch.dict(sys.modules, {"pyqpanda": pyqpanda}):
+            def backends(self):
+                return {"WK_C180": True, "72": False}
+
+            def backend(self, name):
+                observed["backend"] = name
+                return Backend()
+
+        def convert_originir(source):
+            observed["originir"] = source
+            return "QPROG"
+
+        pyqpanda3 = ModuleType("pyqpanda3")
+        compiler = ModuleType("pyqpanda3.intermediate_compiler")
+        compiler.convert_originir_string_to_qprog = convert_originir
+        qcloud = ModuleType("pyqpanda3.qcloud")
+        qcloud.QCloudOptions = Options
+        qcloud.QCloudService = Service
+        with mock.patch.dict(
+            sys.modules,
+            {
+                "pyqpanda3": pyqpanda3,
+                "pyqpanda3.intermediate_compiler": compiler,
+                "pyqpanda3.qcloud": qcloud,
+            },
+        ):
             result = runners.run_originq_real(
                 "QINIT 2\nCREG 2\n",
                 7,
                 token="origin-secret",
-                timeout_seconds=1,
-                poll_interval_seconds=0.001,
             )
 
         self.assertEqual(result.job_id, "ORIGIN-TASK-1")
         self.assertEqual(sum(result.counts.values()), 7)
         self.assertEqual(result.counts_source, "probabilities")
-        self.assertTrue(observed["finalized"])
+        self.assertEqual(observed["originir"], "QINIT 2\nCREG 2\n")
+        self.assertEqual(observed["backend"], "WK_C180")
+        self.assertEqual(observed["run"][:2], ("QPROG", 7))
+
+    def test_originq_tolerates_known_backend_status_parse_error(self):
+        class Options:
+            set_amend = set_mapping = set_optimization = lambda self, value: None
+
+        class Result:
+            def get_probs(self):
+                return {"0": 1.0}
+
+        class Job:
+            def job_id(self):
+                return "ORIGIN-TASK-2"
+
+            def result(self):
+                return Result()
+
+        class Backend:
+            def run(self, program, shots, options):
+                return Job()
+
+        class Service:
+            def __init__(self, api_key):
+                pass
+
+            def backends(self):
+                raise RuntimeError("value is not array (which is 3)")
+
+            def backend(self, name):
+                return Backend()
+
+        compiler = ModuleType("pyqpanda3.intermediate_compiler")
+        compiler.convert_originir_string_to_qprog = lambda source: "QPROG"
+        qcloud = ModuleType("pyqpanda3.qcloud")
+        qcloud.QCloudOptions = Options
+        qcloud.QCloudService = Service
+        with mock.patch.dict(
+            sys.modules,
+            {
+                "pyqpanda3": ModuleType("pyqpanda3"),
+                "pyqpanda3.intermediate_compiler": compiler,
+                "pyqpanda3.qcloud": qcloud,
+            },
+        ):
+            result = runners.run_originq_real(
+                "QINIT 1\nCREG 1\nMEASURE q[0], c[0]\n",
+                4,
+                token="origin-secret",
+            )
+
+        self.assertEqual(result.job_id, "ORIGIN-TASK-2")
+        self.assertEqual(result.raw_result["backend_check"], "sdk_response_incompatible")
 
     def test_hardware_evidence_is_serializable_and_redacted(self):
         execution = ExecutionResult(
