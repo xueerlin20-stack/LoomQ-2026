@@ -11,6 +11,10 @@ The contract functions below never re-parse or re-implement platform logic;
 they only parse once and dispatch to a target.
 """
 
+import argparse
+import os
+import sys
+from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
 try:
@@ -25,6 +29,7 @@ except ImportError:
     from qasm_L1.parser import parse_qasm
 
 SUPPORTED_TARGETS = ("spinq", "originq", "braket")
+CREDENTIALS_DIRECTORY = Path(__file__).resolve().parent / "qasm_L1" / "credentials"
 
 RUNNERS = {
     "spinq": runners.run_spinq,
@@ -43,6 +48,10 @@ PROGRAM_SUFFIXES = {"spinq": "qasm", "braket": "qasm", "originq": "originir"}
 
 def _normalize_target(target: str) -> str:
     return (target or "").strip().lower()
+
+
+def _read_credential(filename: str) -> str:
+    return (CREDENTIALS_DIRECTORY / filename).read_text(encoding="utf-8").strip()
 
 
 def transpile(qasm_str: str, target: str) -> str:
@@ -124,6 +133,63 @@ def run_real(
     return execution.to_contract_dict(include_raw=True)
 
 
+def main(argv: List[str] = None) -> int:
+    """Run one or more local circuits and save their native IR and results."""
+    parser = argparse.ArgumentParser(
+        description="Run LoomQ OpenQASM 2 circuits locally or on a real QPU and save results."
+    )
+    parser.add_argument("input", help="a .qasm file or a directory of .qasm files")
+    parser.add_argument("--target", choices=SUPPORTED_TARGETS, required=True)
+    parser.add_argument("--shots", type=int, default=1024)
+    parser.add_argument("--real", action="store_true", help="submit to a real QPU")
+    parser.add_argument(
+        "--output",
+        default=str(Path(__file__).resolve().parent / "evidence" / "files"),
+        help="artifact output directory (default: starter_kit/evidence/files)",
+    )
+    args = parser.parse_args(argv)
+
+    input_path = Path(args.input)
+    circuits = sorted(input_path.glob("*.qasm")) if input_path.is_dir() else [input_path]
+    if not circuits:
+        parser.error("no .qasm circuits found")
+
+    output_root = Path(args.output)
+    batch_mode = len(circuits) > 1
+    for circuit_path in circuits:
+        output_directory = output_root / circuit_path.stem if batch_mode else output_root
+        qasm_str = circuit_path.read_text(encoding="utf-8")
+        if args.real:
+            if args.target == "spinq":
+                options = {
+                    "username": os.environ["SPINQ_USERNAME"],
+                    "keyfile": str(CREDENTIALS_DIRECTORY / "spinq_private_key.pem"),
+                    "platform": os.environ.get("SPINQ_PLATFORM", "triangulum_vp"),
+                }
+            elif args.target == "braket":
+                options = {"device_arn": os.environ["BRAKET_DEVICE_ARN"]}
+            else:
+                options = {"token": _read_credential("originq_token.txt")}
+            result = run_real(
+                qasm_str,
+                args.target,
+                args.shots,
+                evidence_directory=str(output_directory),
+                **options,
+            )
+        else:
+            result = run_and_save(
+                qasm_str,
+                args.target,
+                args.shots,
+                str(output_directory),
+            )
+        print(f"{circuit_path.name}: {result['counts']}")
+        files_key = "evidence_files" if args.real else "artifact_files"
+        print(f"files: {result['meta'][files_key]}")
+    return 0
+
+
 def agent_chat(prompt: str) -> str:
     """Optional L2 entry point using the documented LOOMQ_LLM_* environment."""
     raise NotImplementedError("L2 is optional; implement agent_chat(prompt) to enter")
@@ -134,3 +200,7 @@ def compile_hybrid(hybrid_qasm_str: str) -> Tuple[List[str], str]:
     raise NotImplementedError(
         "L3 is optional; implement compile_hybrid(hybrid_qasm_str) to enter"
     )
+
+
+if __name__ == "__main__":
+    sys.exit(main())

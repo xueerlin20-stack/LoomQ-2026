@@ -1,0 +1,15 @@
+{
+  "backend": "braket",
+  "job_id": "00d16a41-bb37-40de-8b83-7bf3bb9f6c33",
+  "shots": 1024,
+  "counts": {
+    "00": 506,
+    "11": 518
+  },
+  "bit_order": "little",
+  "timestamp": "2026-08-09T10:19:17.382998+00:00",
+  "meta": {
+    "device": "LocalSimulator",
+    "counts_source": "measurement_counts"
+  }
+}

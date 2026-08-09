@@ -12,6 +12,54 @@ from starter_kit.qasm_L1 import runners
 
 
 class RealRunnerTests(unittest.TestCase):
+    def test_adapter_cli_runs_every_qasm_in_a_directory(self):
+        result = {
+            "counts": {"0": 4},
+            "meta": {"artifact_files": {"program": "circuit.qasm", "result": "result.json"}},
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            input_directory = Path(directory) / "circuits"
+            input_directory.mkdir()
+            (input_directory / "a.qasm").write_text("OPENQASM 2.0;", encoding="utf-8")
+            (input_directory / "b.qasm").write_text("OPENQASM 2.0;", encoding="utf-8")
+            with mock.patch.object(adapter, "run_and_save", return_value=result) as run_saved:
+                exit_code = adapter.main(
+                    [
+                        str(input_directory),
+                        "--target",
+                        "braket",
+                        "--shots",
+                        "4",
+                        "--output",
+                        str(Path(directory) / "output"),
+                    ]
+                )
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(run_saved.call_count, 2)
+
+    def test_adapter_cli_real_switch_uses_real_runner(self):
+        result = {
+            "counts": {"0": 4},
+            "meta": {"evidence_files": {"program": "circuit.qasm", "result": "result.json"}},
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            circuit = Path(directory) / "bell.qasm"
+            circuit.write_text("OPENQASM 2.0;", encoding="utf-8")
+            with mock.patch.dict(
+                "os.environ", {"BRAKET_DEVICE_ARN": "arn:aws:braket:test::device/qpu/mock/device"}
+            ), mock.patch.object(adapter, "run_real", return_value=result) as run_real:
+                exit_code = adapter.main(
+                    [str(circuit), "--target", "braket", "--shots", "4", "--real"]
+                )
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(run_real.call_count, 1)
+        self.assertEqual(
+            run_real.call_args.kwargs["device_arn"],
+            "arn:aws:braket:test::device/qpu/mock/device",
+        )
+
     def test_adapter_run_and_save_exports_local_program_and_result(self):
         qasm = '''OPENQASM 2.0;
 include "qelib1.inc";
