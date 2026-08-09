@@ -303,9 +303,6 @@ def run_originq_real(
     shots: int,
     *,
     token: str,
-    is_amend: bool = True,
-    is_mapping: bool = True,
-    is_optimization: bool = True,
 ) -> ExecutionResult:
     """Submit transpiled OriginIR to a named Origin Quantum backend via QPanda3."""
     try:
@@ -335,12 +332,9 @@ def run_originq_real(
 
     program = convert_originir_string_to_qprog(native_qasm)
     options = QCloudOptions()
-    options.set_amend(is_amend)
-    options.set_mapping(is_mapping)
-    options.set_optimization(is_optimization)
 
     submitted_at = utc_now()
-    job = service.backend("WK_C180").run(program, shots, options)
+    job = service.backend("WK_C180").run([program], shots, options)
     job_id = str(job.job_id())
     if not job_id:
         raise RuntimeError("OriginQ Cloud did not return a traceable task ID")
@@ -351,7 +345,7 @@ def run_originq_real(
         raise RuntimeError(
             f"OriginQ job {job_id} was submitted but result retrieval failed: {exc}"
         ) from exc
-    probabilities = cloud_result.get_probs()
+    probabilities = cloud_result.get_probs_list()[0]
     counts = _probabilities_to_counts(
         probabilities, shots, width=_measurement_width(native_qasm)
     )

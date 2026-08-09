@@ -144,6 +144,16 @@ OriginQ 真机使用 `pyqpanda3`，将 `transpile()` 生成的 OriginIR 转换�
 程序，并固定提交到 `WK_C180`。旧的 `pyqpanda==3.8.5` 仍只用于本地
 OriginIR 模拟。
 
+`pyqpanda3==0.3.3` 的悟空真机接口必须传入 `QCloudOptions`；无 options 的
+单程序重载只适用于全振幅模拟器。项目创建默认 options，但不调用任何
+`set_*()`，因此全部采用 SDK 默认配置：
+
+```python
+options = QCloudOptions()
+job = backend.run([program], shots, options)
+probabilities = job.result().get_probs_list()[0]
+```
+
 macOS 首次安装还需要 QPanda3 wheel 的系统依赖：
 
 ```bash

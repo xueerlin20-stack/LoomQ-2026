@@ -227,18 +227,11 @@ measure q -> c;
         observed = {}
 
         class Options:
-            def set_amend(self, value):
-                observed["amend"] = value
-
-            def set_mapping(self, value):
-                observed["mapping"] = value
-
-            def set_optimization(self, value):
-                observed["optimization"] = value
+            pass
 
         class CloudResult:
-            def get_probs(self):
-                return {"00": 0.51, "11": 0.49}
+            def get_probs_list(self):
+                return [{"00": 0.51, "11": 0.49}]
 
         class Job:
             def job_id(self):
@@ -292,15 +285,16 @@ measure q -> c;
         self.assertEqual(result.counts_source, "probabilities")
         self.assertEqual(observed["originir"], "QINIT 2\nCREG 2\n")
         self.assertEqual(observed["backend"], "WK_C180")
-        self.assertEqual(observed["run"][:2], ("QPROG", 7))
+        self.assertEqual(observed["run"][:2], (["QPROG"], 7))
+        self.assertIsInstance(observed["run"][2], Options)
 
     def test_originq_tolerates_known_backend_status_parse_error(self):
         class Options:
-            set_amend = set_mapping = set_optimization = lambda self, value: None
+            pass
 
         class Result:
-            def get_probs(self):
-                return {"0": 1.0}
+            def get_probs_list(self):
+                return [{"0": 1.0}]
 
         class Job:
             def job_id(self):

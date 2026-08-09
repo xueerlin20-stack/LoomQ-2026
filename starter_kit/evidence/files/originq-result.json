@@ -1,15 +1,15 @@
 {
   "backend": "originq_real",
-  "job_id": "268D2ECC5B148D02E18A952BED5CF114",
+  "job_id": "F862EAC6C2AC2BA7C722C2814947F496",
   "shots": 1000,
   "counts": {
     "00": 19,
-    "01": 201,
-    "10": 617,
-    "11": 163
+    "01": 219,
+    "10": 534,
+    "11": 228
   },
   "bit_order": "little",
-  "timestamp": "2026-08-09T11:39:41.251067+00:00",
+  "timestamp": "2026-08-09T12:10:18.597093+00:00",
   "meta": {
     "timestamp_source": "client_submit_utc",
     "device": "WK_C180",
