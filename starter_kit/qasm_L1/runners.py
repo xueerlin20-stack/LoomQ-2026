@@ -6,35 +6,180 @@ official SDK.
 
 from __future__ import annotations
 
+import re
 import tempfile
+import time
+from math import floor
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Optional, Tuple
+from uuid import uuid4
 
-def _little_endian(counts: Dict[str, int]) -> Dict[str, int]:
+try:
+    from .execution import ExecutionResult, utc_now
+except ImportError:
+    from execution import ExecutionResult, utc_now
+
+
+def _measurement_width(native_program: str) -> Optional[int]:
+    widths = [int(value) for value in re.findall(r"\bcreg\s+\w+\[(\d+)\]", native_program)]
+    if not widths:
+        widths = [int(value) for value in re.findall(r"\bbit\[(\d+)\]\s+\w+", native_program)]
+    if not widths:
+        match = re.search(r"^CREG\s+(\d+)\s*$", native_program, re.MULTILINE)
+        widths = [int(match.group(1))] if match else []
+    return sum(widths) if widths else None
+
+
+def _normalize_counts(
+    counts: Dict[str, int], *, width: Optional[int], reverse: bool = False
+) -> Dict[str, int]:
+    normalized: Dict[str, int] = {}
+    for raw_key, value in counts.items():
+        binary = _normalize_bitstring(raw_key, width=width, reverse=reverse)
+        normalized[binary] = normalized.get(binary, 0) + int(value)
+    return normalized
+
+
+def _normalize_bitstring(raw_key, *, width: Optional[int], reverse: bool) -> str:
+    key = str(raw_key).replace(" ", "")
+    if set(key) <= {"0", "1"}:
+        binary = key
+    elif key.isdigit():
+        binary = bin(int(key))[2:]
+    else:
+        raise RuntimeError(f"quantum backend returned a non-binary result key: {raw_key}")
+    if width is not None:
+        binary = binary.zfill(width)
+    return binary[::-1] if reverse else binary
+
+
+def _little_endian(counts: Dict[str, int], width: Optional[int] = None) -> Dict[str, int]:
     """SDKs report keys with c[0] leftmost; the contract wants it rightmost."""
-    return {key[::-1]: value for key, value in counts.items()}
+    return _normalize_counts(counts, width=width, reverse=True)
 
 
-def run_spinq(native_qasm: str, shots: int) -> Dict[str, int]:
+def _compile_spinq_qasm(native_qasm: str, *, omit_measurements: bool = False):
+    """Compile OpenQASM 2 through SpinQit's path-only QASM compiler."""
+    from spinqit.compiler.qasm_compiler import QASMCompiler
+
+    source = native_qasm
+    if omit_measurements:
+        source = "\n".join(
+            line for line in source.splitlines() if not line.lstrip().startswith("measure ")
+        )
+        source += "\n"
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        qasm_path = Path(temp_dir) / "circuit.qasm"
+        qasm_path.write_text(source, encoding="utf-8")
+        return QASMCompiler().compile(str(qasm_path), 0)
+
+
+def _probabilities_to_counts(
+    probabilities: Dict[str, float], shots: int, *, width: Optional[int] = None
+) -> Dict[str, int]:
+    """Round a probability distribution while preserving the exact shot total."""
+    weights: Dict[str, float] = {}
+    for key, value in probabilities.items():
+        normalized = _normalize_bitstring(key, width=width, reverse=False)
+        weights[normalized] = weights.get(normalized, 0.0) + max(0.0, float(value))
+    total = sum(weights.values())
+    if total <= 0:
+        raise RuntimeError("quantum backend returned an empty probability distribution")
+
+    scaled = {key: value * shots / total for key, value in weights.items()}
+    counts = {key: floor(value) for key, value in scaled.items()}
+    remainder = shots - sum(counts.values())
+    for key in sorted(scaled, key=lambda item: (scaled[item] - counts[item], item), reverse=True)[
+        :remainder
+    ]:
+        counts[key] += 1
+    return counts
+
+
+def run_spinq(native_qasm: str, shots: int) -> ExecutionResult:
     """Execute native OpenQASM 2.0 on the SpinQit basic simulator."""
     from spinqit.backend.basic_simulator_backend import (
         BasicSimulatorBackend,
         BasicSimulatorConfig,
     )
-    from spinqit.compiler.qasm_compiler import QASMCompiler
 
-    with tempfile.TemporaryDirectory() as temp_dir:
-        qasm_path = Path(temp_dir) / "circuit.qasm"
-        qasm_path.write_text(native_qasm, encoding="utf-8")
-        ir = QASMCompiler().compile(str(qasm_path), 0)
-
+    ir = _compile_spinq_qasm(native_qasm)
     config = BasicSimulatorConfig()
     config.configure_shots(shots)
     result = BasicSimulatorBackend().execute(ir, config)
-    return _little_endian({str(key): int(value) for key, value in result.counts.items()})
+    counts = _little_endian(dict(result.counts), _measurement_width(native_qasm))
+    return ExecutionResult("spinq", f"local-spinq-{uuid4().hex}", shots, counts, utc_now())
 
 
-def run_braket(native_qasm: str, shots: int) -> Dict[str, int]:
+def run_spinq_real(
+    native_qasm: str,
+    shots: int,
+    *,
+    username: str,
+    keyfile: str,
+    platform: str = "triangulum_vp",
+    host: str = "http://cloud.spinq.cn:6060",
+    task_name: str = "LoomQ L1",
+    task_description: str = "",
+) -> ExecutionResult:
+    """Submit OpenQASM 2 to a physical device on SpinQ Cloud.
+
+    ``keyfile`` is the RSA private-key file registered for ``username``.
+    Platform access is account-specific; common physical platform codes include
+    ``gemini_vp``, ``triangulum_vp``, and ``superconductor_vp``.
+    """
+    from spinqit import SpinQCloudConfig, get_spinq_cloud
+
+    if not username or not keyfile:
+        raise ValueError("SpinQ Cloud username and RSA keyfile are required")
+
+    # SpinQ Cloud performs terminal measurement automatically and rejects
+    # explicit measurement instructions in the compiled IR.
+    ir = _compile_spinq_qasm(native_qasm, omit_measurements=True)
+    config = SpinQCloudConfig()
+    config.configure_platform(platform)
+    config.configure_shots(shots)
+    config.configure_task(task_name, task_description)
+
+    result = get_spinq_cloud(username, keyfile, host).execute(ir, config)
+    if result is None or result.counts is None:
+        raise RuntimeError("SpinQ Cloud task completed without measurement counts")
+    width = _measurement_width(native_qasm)
+    raw_counts = dict(result.counts)
+    if sum(int(value) for value in raw_counts.values()) == shots:
+        counts = _little_endian(raw_counts, width)
+        counts_source = "measurement_counts"
+    elif getattr(result, "probabilities", None):
+        probability_counts = _probabilities_to_counts(result.probabilities, shots, width=width)
+        counts = _little_endian(probability_counts, width)
+        counts_source = "probabilities"
+    else:
+        raise RuntimeError("SpinQ Cloud counts total does not equal requested shots")
+    job_id = str(getattr(result, "task_code", "") or "")
+    if not job_id:
+        raise RuntimeError("SpinQ Cloud result did not contain a traceable task code")
+    raw_result = {
+        "task_code": job_id,
+        "task_name": getattr(result, "task_name", None),
+        "platform": getattr(result, "platform", None) or platform,
+        "counts": dict(result.counts),
+        "probabilities": getattr(result, "probabilities", None),
+    }
+    return ExecutionResult(
+        "spinq_real",
+        job_id,
+        shots,
+        counts,
+        utc_now(),
+        device=platform,
+        counts_source=counts_source,
+        raw_result=raw_result,
+        metadata={"timestamp_source": "client_submit_utc"},
+    )
+
+
+def run_braket(native_qasm: str, shots: int) -> ExecutionResult:
     """Execute native OpenQASM 3 on the AWS Braket local simulator."""
     from braket.devices import LocalSimulator
     from braket.ir.openqasm import Program as OpenQASMProgram
@@ -45,12 +190,65 @@ def run_braket(native_qasm: str, shots: int) -> Dict[str, int]:
     braket3 = native_qasm.replace('include "stdgates.inc";', "")
     task = LocalSimulator().run(OpenQASMProgram(source=braket3), shots=shots)
     result = task.result()
-    return _little_endian(
-        {str(key): int(value) for key, value in result.measurement_counts.items()}
+    counts = _little_endian(dict(result.measurement_counts), _measurement_width(native_qasm))
+    task_metadata = getattr(result, "task_metadata", None)
+    job_id = str(getattr(task_metadata, "id", "") or f"local-braket-{uuid4().hex}")
+    return ExecutionResult("braket", job_id, shots, counts, utc_now(), device="LocalSimulator")
+
+
+def run_braket_real(
+    native_qasm: str,
+    shots: int,
+    *,
+    device_arn: str,
+    s3_destination_folder: Optional[Tuple[str, str]] = None,
+) -> ExecutionResult:
+    """Submit OpenQASM 3 to an AWS Braket QPU and wait for its result.
+
+    AWS credentials and region are resolved by the standard boto3 credential
+    chain. ``device_arn`` must identify a gate-model QPU that supports every
+    operation emitted by the transpiler.
+    """
+    from braket.aws import AwsDevice
+    from braket.ir.openqasm import Program as OpenQASMProgram
+
+    if not device_arn or "/qpu/" not in device_arn:
+        raise ValueError("device_arn must identify an AWS Braket QPU")
+
+    braket3 = native_qasm.replace('include "stdgates.inc";', "")
+    program = OpenQASMProgram(source=braket3)
+    device = AwsDevice(device_arn)
+    if s3_destination_folder is None:
+        task = device.run(program, shots=shots)
+    else:
+        task = device.run(program, s3_destination_folder, shots=shots)
+    submitted_at = utc_now()
+    result = task.result()
+    counts = _little_endian(dict(result.measurement_counts), _measurement_width(native_qasm))
+    job_id = str(getattr(task, "id", "") or "")
+    if not job_id:
+        raise RuntimeError("AWS Braket task did not contain a traceable task ID")
+    task_metadata = getattr(result, "task_metadata", None)
+    raw_result = {
+        "task_id": job_id,
+        "task_metadata": task_metadata,
+        "measurement_counts": dict(result.measurement_counts),
+        "measured_qubits": getattr(result, "measured_qubits", None),
+        "additional_metadata": getattr(result, "additional_metadata", None),
+    }
+    return ExecutionResult(
+        "braket_real",
+        job_id,
+        shots,
+        counts,
+        submitted_at,
+        device=device_arn,
+        raw_result=raw_result,
+        metadata={"timestamp_source": "client_submit_utc"},
     )
 
 
-def run_originq(native_qasm: str, shots: int) -> Dict[str, int]:
+def run_originq(native_qasm: str, shots: int) -> ExecutionResult:
     """Execute on the official pyqpanda CPUQVM, fed the transpiled OriginIR.
 
     ``_ORIGINIR_GATES`` renders every gate in a pyqpanda-native form: parameter
@@ -71,6 +269,87 @@ def run_originq(native_qasm: str, shots: int) -> Dict[str, int]:
     try:
         program, _, cbits = convert_originir_str_to_qprog(native_qasm, machine)
         result = machine.run_with_configuration(program, cbits, shots)
-        return {str(key): int(value) for key, value in result.items()}
+        counts = _normalize_counts(
+            dict(result), width=_measurement_width(native_qasm), reverse=False
+        )
+        return ExecutionResult(
+            "originq", f"local-originq-{uuid4().hex}", shots, counts, utc_now()
+        )
+    finally:
+        machine.finalize()
+
+
+def run_originq_real(
+    native_qasm: str,
+    shots: int,
+    *,
+    token: str,
+    is_amend: bool = True,
+    is_mapping: bool = True,
+    is_optimization: bool = True,
+    timeout_seconds: float = 21600,
+    poll_interval_seconds: float = 10,
+) -> ExecutionResult:
+    """Submit OriginIR to Origin Quantum's 72-qubit Wukong QPU."""
+    try:
+        from pyqpanda import QCloud, real_chip_type
+    except ImportError as exc:  # pragma: no cover
+        raise RuntimeError("pyqpanda is required for the OriginQ real-QPU path") from exc
+
+    if not token:
+        raise ValueError("Origin Quantum Cloud API token is required")
+
+    if timeout_seconds <= 0 or poll_interval_seconds <= 0:
+        raise ValueError("OriginQ polling timeout and interval must be positive")
+
+    machine = QCloud()
+    machine.init_qvm(token, True)
+    try:
+        submitted_at = utc_now()
+        job_id = str(machine.async_real_chip_measure(
+            native_qasm,
+            shots,
+            chip_id=real_chip_type.origin_72,
+            is_amend=is_amend,
+            is_mapping=is_mapping,
+            is_optimization=is_optimization,
+            describe="LoomQ L1",
+        ))
+        if not job_id:
+            raise RuntimeError("OriginQ Cloud did not return a traceable task ID")
+
+        deadline = time.monotonic() + timeout_seconds
+        raw_result = None
+        while time.monotonic() < deadline:
+            raw_result = machine.query_task_state(job_id)
+            if not isinstance(raw_result, (list, tuple)) or len(raw_result) < 3:
+                raise RuntimeError("OriginQ Cloud returned an invalid task-state response")
+            state, probability_payload, error_code = raw_result[:3]
+            error_info = raw_result[3] if len(raw_result) > 3 else ""
+            if int(error_code) != 0:
+                raise RuntimeError(f"OriginQ task {job_id} failed: {error_info or error_code}")
+            if int(state) == 3:
+                parsed = machine.parse_probability_result(probability_payload)
+                probabilities = parsed[0] if isinstance(parsed, list) else parsed
+                counts = _probabilities_to_counts(
+                    probabilities, shots, width=_measurement_width(native_qasm)
+                )
+                return ExecutionResult(
+                    "originq_real",
+                    job_id,
+                    shots,
+                    counts,
+                    submitted_at,
+                    device="origin_72",
+                    counts_source="probabilities",
+                    raw_result={
+                        "task_id": job_id,
+                        "query_response": raw_result,
+                        "probabilities": probabilities,
+                    },
+                    metadata={"timestamp_source": "client_submit_utc"},
+                )
+            time.sleep(poll_interval_seconds)
+        raise TimeoutError(f"OriginQ task {job_id} did not complete within {timeout_seconds}s")
     finally:
         machine.finalize()
