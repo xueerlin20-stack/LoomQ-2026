@@ -327,14 +327,14 @@ def run_originq_real(
             raise
         backend_check = "sdk_response_incompatible"
     else:
-        if not available_backends.get("WK_C180", False):
-            raise RuntimeError("OriginQ backend WK_C180 is offline or unavailable")
+        if not available_backends.get("WK_C180_2", False):
+            raise RuntimeError("OriginQ backend WK_C180_2 is offline or unavailable")
 
     program = convert_originir_string_to_qprog(native_qasm)
     options = QCloudOptions()
 
     submitted_at = utc_now()
-    job = service.backend("WK_C180").run([program], shots, options)
+    job = service.backend("WK_C180_2").run([program], shots, options)
     job_id = str(job.job_id())
     if not job_id:
         raise RuntimeError("OriginQ Cloud did not return a traceable task ID")
