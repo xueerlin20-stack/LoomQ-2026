@@ -43,18 +43,19 @@ class Translator:
     def _emit(self, spec: TargetSpec) -> str:
         lines = list(spec.header(self.circuit))
         for gate in self.circuit.gates:
-            handler = spec.gates[gate.name]
-            if callable(handler):
-                lines.extend(handler(gate))
-            else:
-                lines.append(self._render_direct(gate, handler, spec))
+            lines.append(self._render_gate(gate, spec))
         for measurement in self.circuit.measurements:
             lines.extend(spec.measure(measurement))
         return "\n".join(lines) + "\n"
 
-    def _render_direct(self, gate: Gate, emit_name: str, spec: TargetSpec) -> str:
+    def _render_gate(self, gate: Gate, spec: TargetSpec) -> str:
+        rule = spec.gates[gate.name]
         tokens = ", ".join(spec.qubit_token(ref) for ref in gate.qubits)
-        if gate.params:
-            params = ", ".join(format_param(value) for value in gate.params)
-            return f"{emit_name}({params}) {tokens}{spec.terminator}"
-        return f"{emit_name} {tokens}{spec.terminator}"
+        values = gate.params if rule.fixed_params is None else rule.fixed_params
+        if not values:
+            return f"{rule.name} {tokens}{spec.terminator}"
+
+        params = ", ".join(format_param(value) for value in values)
+        if spec.params_after_qubits:
+            return f"{rule.name} {tokens},({params}){spec.terminator}"
+        return f"{rule.name}({params}) {tokens}{spec.terminator}"

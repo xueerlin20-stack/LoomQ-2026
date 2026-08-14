@@ -1,7 +1,7 @@
 {
   "contract_version": "1.0",
   "suite": "public",
-  "generated_at": "2026-08-09T11:26:57.356943+00:00",
+  "generated_at": "2026-08-14T12:22:26.843806+00:00",
   "summary": {
     "passed": 15,
     "failed": 0,
@@ -18,13 +18,13 @@
       "case_id": "l1:bell.qasm:originq",
       "status": "PASS",
       "reason": "fidelity threshold met",
-      "fidelity": 0.991195
+      "fidelity": 0.993094
     },
     {
       "case_id": "l1:bell.qasm:braket",
       "status": "PASS",
       "reason": "fidelity threshold met",
-      "fidelity": 0.99741
+      "fidelity": 0.997583
     },
     {
       "case_id": "l1:ghz3.qasm:spinq",
@@ -36,13 +36,13 @@
       "case_id": "l1:ghz3.qasm:originq",
       "status": "PASS",
       "reason": "fidelity threshold met",
-      "fidelity": 0.999482
+      "fidelity": 0.991713
     },
     {
       "case_id": "l1:ghz3.qasm:braket",
       "status": "PASS",
       "reason": "fidelity threshold met",
-      "fidelity": 0.997238
+      "fidelity": 0.998792
     },
     {
       "case_id": "l1:ghz5.qasm:spinq",
@@ -54,13 +54,13 @@
       "case_id": "l1:ghz5.qasm:originq",
       "status": "PASS",
       "reason": "fidelity threshold met",
-      "fidelity": 0.992058
+      "fidelity": 0.99413
     },
     {
       "case_id": "l1:ghz5.qasm:braket",
       "status": "PASS",
       "reason": "fidelity threshold met",
-      "fidelity": 0.996893
+      "fidelity": 0.996202
     },
     {
       "case_id": "l1:grover3.qasm:spinq",
@@ -72,13 +72,13 @@
       "case_id": "l1:grover3.qasm:originq",
       "status": "PASS",
       "reason": "fidelity threshold met",
-      "fidelity": 0.991652
+      "fidelity": 0.989578
     },
     {
       "case_id": "l1:grover3.qasm:braket",
       "status": "PASS",
       "reason": "fidelity threshold met",
-      "fidelity": 0.983106
+      "fidelity": 0.986041
     },
     {
       "case_id": "l1:qft4.qasm:spinq",
@@ -90,13 +90,13 @@
       "case_id": "l1:qft4.qasm:originq",
       "status": "PASS",
       "reason": "fidelity threshold met",
-      "fidelity": 0.981344
+      "fidelity": 0.978404
     },
     {
       "case_id": "l1:qft4.qasm:braket",
       "status": "PASS",
       "reason": "fidelity threshold met",
-      "fidelity": 0.981893
+      "fidelity": 0.979398
     }
   ],
   "notice": "Public self-check only; this report is not an official score."

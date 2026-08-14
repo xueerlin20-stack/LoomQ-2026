@@ -9,12 +9,12 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import Callable, Dict, List, Union
+from typing import Callable, Dict, List, Optional, Tuple
 
 try:
-    from .ir import Circuit, Gate, Measurement, QubitRef
+    from .ir import Circuit, Measurement, QubitRef
 except ImportError:
-    from ir import Circuit, Gate, Measurement, QubitRef
+    from ir import Circuit, Measurement, QubitRef
 
 WHITELIST = frozenset(
     {"h", "x", "s", "sdg", "t", "tdg", "rz", "ry", "cx", "cu1", "swap", "ccx"}
@@ -37,7 +37,13 @@ ARITY = {
 
 PARAM_GATES = frozenset({"rz", "ry", "cu1"})
 
-GateRenderer = Union[str, Callable[[Gate], List[str]]]
+
+@dataclass(frozen=True)
+class GateRule:
+    """One input gate's declarative translation to a target gate."""
+
+    name: str
+    fixed_params: Optional[Tuple[float, ...]] = None
 
 
 @dataclass
@@ -45,9 +51,10 @@ class TargetSpec:
     """Declarative description of how to render a Circuit for one target."""
 
     header: Callable[[Circuit], List[str]]
-    gates: Dict[str, GateRenderer]
+    gates: Dict[str, GateRule]
     qubit_token: Callable[[QubitRef], str]
     measure: Callable[[Measurement], List[str]]
+    params_after_qubits: bool = False
     terminator: str = ";"
 
 
@@ -94,41 +101,6 @@ def _qasm3_measure(measurement: Measurement) -> List[str]:
     ]
 
 
-def _param_after_qubits(emit_name: str) -> Callable[[Gate], List[str]]:
-    """Render parameter gates as ``NAME q[..], q[..],(θ)``.
-
-    The LoomQ contract accepts both `RY(θ) q[0]` and `RY q[0],(θ)` and allows
-    `CU1/CR`, so this spelling is contract-compliant *and* is the only form
-    pyqpanda's OriginIR parser understands.  One mapping therefore serves both
-    the transpile and the run path.
-    """
-
-    def render(gate: Gate) -> List[str]:
-        tokens = ", ".join(f"q[{ref.global_index}]" for ref in gate.qubits)
-        params = ", ".join(format_param(value) for value in gate.params)
-        return [f"{emit_name} {tokens},({params})"]
-
-    return render
-
-
-def _originir_rz_equivalent(angle: float) -> Callable[[Gate], List[str]]:
-    """Render ``sdg``/``tdg`` as a contract-safe OriginIR ``RZ`` gate.
-
-    QPanda's Origin-IR has no dagger keywords (``SDAG``/``TDAG``); per
-    gate_identities.md section 1, ``sdg = u1(-pi/2)`` and ``tdg = u1(-pi/4)``.
-    For a standalone single-qubit gate, section 2 permits replacing ``u1(θ)``
-    with ``rz(θ)`` because they differ only by a global phase.  ``RZ`` belongs
-    to the target contract and is also parsed by pyqpanda, unlike ``U1`` which
-    is executable but absent from the contract's allowed gate names.
-    """
-
-    def render(gate: Gate) -> List[str]:
-        qubit = gate.qubits[0]
-        return [f"RZ q[{qubit.global_index}],({format_param(angle)})"]
-
-    return render
-
-
 def _originir_measure(measurement: Measurement) -> List[str]:
     return [
         f"MEASURE q[{qubit.global_index}], c[{cbit.global_index}]"
@@ -136,44 +108,67 @@ def _originir_measure(measurement: Measurement) -> List[str]:
     ]
 
 
-_QASM2_GATES = {name: name for name in WHITELIST}
+SPINQ_GATES = {name: GateRule(name) for name in WHITELIST}
 
-_QASM3_GATES = {name: name for name in WHITELIST}
-_QASM3_GATES["cx"] = "cnot"
-_QASM3_GATES["sdg"] = "si"
-_QASM3_GATES["tdg"] = "ti"
-_QASM3_GATES["cu1"] = "cphaseshift"
-_QASM3_GATES["ccx"] = "ccnot"
-
-_ORIGINIR_GATES = {
-    "h": "H",
-    "x": "X",
-    "s": "S",
-    "sdg": _originir_rz_equivalent(-math.pi / 2),
-    "t": "T",
-    "tdg": _originir_rz_equivalent(-math.pi / 4),
-    "rz": _param_after_qubits("RZ"),
-    "ry": _param_after_qubits("RY"),
-    "cx": "CNOT",
-    "cu1": _param_after_qubits("CR"),
-    "swap": "SWAP",
-    "ccx": "TOFFOLI",
+BRAKET_GATES = {
+    "h": GateRule("h"),
+    "x": GateRule("x"),
+    "s": GateRule("s"),
+    "sdg": GateRule("si"),
+    "t": GateRule("t"),
+    "tdg": GateRule("ti"),
+    "rz": GateRule("rz"),
+    "ry": GateRule("ry"),
+    "cx": GateRule("cnot"),
+    "cu1": GateRule("cphaseshift"),
+    "swap": GateRule("swap"),
+    "ccx": GateRule("ccnot"),
 }
+
+ORIGINQ_GATES = {
+    "h": GateRule("H"),
+    "x": GateRule("X"),
+    "s": GateRule("S"),
+    "sdg": GateRule("RZ", fixed_params=(-math.pi / 2,)),
+    "t": GateRule("T"),
+    "tdg": GateRule("RZ", fixed_params=(-math.pi / 4,)),
+    "rz": GateRule("RZ"),
+    "ry": GateRule("RY"),
+    "cx": GateRule("CNOT"),
+    "cu1": GateRule("CR"),
+    "swap": GateRule("SWAP"),
+    "ccx": GateRule("TOFFOLI"),
+}
+
+assert SPINQ_GATES.keys() == WHITELIST
+assert BRAKET_GATES.keys() == WHITELIST
+assert ORIGINQ_GATES.keys() == WHITELIST
 
 
 def qasm2_spec() -> TargetSpec:
-    return TargetSpec(_qasm2_header, dict(_QASM2_GATES), lambda ref: ref.token, _qasm2_measure)
+    return TargetSpec(
+        _qasm2_header,
+        dict(SPINQ_GATES),
+        lambda ref: ref.token,
+        _qasm2_measure,
+    )
 
 
 def qasm3_spec() -> TargetSpec:
-    return TargetSpec(_qasm3_header, dict(_QASM3_GATES), lambda ref: ref.token, _qasm3_measure)
+    return TargetSpec(
+        _qasm3_header,
+        dict(BRAKET_GATES),
+        lambda ref: ref.token,
+        _qasm3_measure,
+    )
 
 
 def originir_spec() -> TargetSpec:
     return TargetSpec(
         _originir_header,
-        dict(_ORIGINIR_GATES),
+        dict(ORIGINQ_GATES),
         lambda ref: f"q[{ref.global_index}]",
         _originir_measure,
+        params_after_qubits=True,
         terminator="",
     )
