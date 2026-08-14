@@ -61,8 +61,109 @@ def _normalize_bitstring(raw_key, *, width: Optional[int], reverse: bool) -> str
 def _little_endian(
     counts: Dict[str, int], width: Optional[int] = None
 ) -> Dict[str, int]:
-    """SDKs report keys with c[0] leftmost; the contract wants it rightmost."""
+    """仅用于兼容旧结果：把左低位字符串整体反转。"""
     return _normalize_counts(counts, width=width, reverse=True)
+
+
+def _registers(native_program: str, *, quantum: bool):
+    """读取 QASM 2/3 寄存器声明，返回每个寄存器的全局起点和长度。"""
+    if quantum:
+        patterns = (r"\bqreg\s+(\w+)\[(\d+)\]", r"\bqubit\[(\d+)\]\s+(\w+)")
+    else:
+        patterns = (r"\bcreg\s+(\w+)\[(\d+)\]", r"\bbit\[(\d+)\]\s+(\w+)")
+
+    found = []
+    for pattern_index, pattern in enumerate(patterns):
+        for match in re.finditer(pattern, native_program):
+            # QASM 3 的名称和长度顺序与 QASM 2 相反。
+            if pattern_index == 0:
+                name, size = match.group(1), int(match.group(2))
+            else:
+                size, name = int(match.group(1)), match.group(2)
+            found.append((match.start(), name, size))
+
+    registers = {}
+    offset = 0
+    for _, name, size in sorted(found):
+        registers[name] = (offset, size)
+        offset += size
+    return registers, offset
+
+
+def _measurement_map(native_program: str):
+    """把测量语句展开成 ``(量子位, 经典位)`` 的全局编号对。"""
+    qregs, _ = _registers(native_program, quantum=True)
+    cregs, classical_width = _registers(native_program, quantum=False)
+    pairs = []
+
+    def expand(token: str, registers):
+        match = re.fullmatch(r"(\w+)(?:\[(\d+)\])?", token.strip())
+        if not match or match.group(1) not in registers:
+            raise RuntimeError(f"cannot resolve measurement register: {token}")
+        offset, size = registers[match.group(1)]
+        if match.group(2) is None:
+            return list(range(offset, offset + size))
+        index = int(match.group(2))
+        if index >= size:
+            raise RuntimeError(f"measurement bit is out of range: {token}")
+        return [offset + index]
+
+    for raw_line in native_program.splitlines():
+        line = raw_line.strip()
+        qasm2 = re.fullmatch(r"measure\s+(.+?)\s*->\s*(.+?)\s*;", line)
+        qasm3 = re.fullmatch(r"(.+?)\s*=\s*measure\s+(.+?)\s*;", line)
+        if qasm2:
+            qtokens = expand(qasm2.group(1), qregs)
+            ctokens = expand(qasm2.group(2), cregs)
+        elif qasm3:
+            ctokens = expand(qasm3.group(1), cregs)
+            qtokens = expand(qasm3.group(2), qregs)
+        else:
+            continue
+        if len(qtokens) != len(ctokens):
+            raise RuntimeError("measurement source and destination widths differ")
+        pairs.extend(zip(qtokens, ctokens))
+    return pairs, classical_width
+
+
+def _mapped_counts(
+    counts: Dict[str, int], native_program: str, measured_qubits=None
+) -> Dict[str, int]:
+    """按测量语句生成比赛要求的 ``c[n-1]...c[0]`` key。"""
+    pairs, classical_width = _measurement_map(native_program)
+    if not pairs or not classical_width:
+        return _little_endian(counts, _measurement_width(native_program))
+
+    _, quantum_width = _registers(native_program, quantum=True)
+    raw_qubits = (
+        [int(qubit) for qubit in measured_qubits]
+        if measured_qubits is not None
+        else list(range(quantum_width))
+    )
+    if any(
+        set(str(key).replace(" ", "")) <= {"0", "1"}
+        and len(str(key).replace(" ", "")) > len(raw_qubits)
+        for key in counts
+    ):
+        # 兼容不含真实寄存器宽度的旧 SDK/mock 结果。
+        return _little_endian(counts, _measurement_width(native_program))
+
+    qubit_positions = {qubit: index for index, qubit in enumerate(raw_qubits)}
+
+    normalized = {}
+    for raw_key, value in counts.items():
+        raw_bits = _normalize_bitstring(raw_key, width=len(raw_qubits), reverse=False)
+        classical_bits = ["0"] * classical_width
+
+        # SDK 给出量子位测量值；这里按 q[i] -> c[j] 放到正确的经典位。
+        for qubit, cbit in pairs:
+            position = qubit_positions.get(qubit)
+            if position is not None:
+                classical_bits[cbit] = raw_bits[position]
+
+        key = "".join(reversed(classical_bits))
+        normalized[key] = normalized.get(key, 0) + int(value)
+    return normalized
 
 
 def _compile_spinq_qasm(native_qasm: str, *, omit_measurements: bool = False):
@@ -117,7 +218,7 @@ def run_spinq(native_qasm: str, shots: int) -> ExecutionResult:
     config = BasicSimulatorConfig()
     config.configure_shots(shots)
     result = BasicSimulatorBackend().execute(ir, config)
-    counts = _little_endian(dict(result.counts), _measurement_width(native_qasm))
+    counts = _mapped_counts(dict(result.counts), native_qasm)
     return ExecutionResult(
         "spinq", f"local-spinq-{uuid4().hex}", shots, counts, utc_now()
     )
@@ -159,13 +260,13 @@ def run_spinq_real(
     width = _measurement_width(native_qasm)
     raw_counts = dict(result.counts)
     if sum(int(value) for value in raw_counts.values()) == shots:
-        counts = _little_endian(raw_counts, width)
+        counts = _mapped_counts(raw_counts, native_qasm)
         counts_source = "measurement_counts"
     elif getattr(result, "probabilities", None):
         probability_counts = _probabilities_to_counts(
             result.probabilities, shots, width=width
         )
-        counts = _little_endian(probability_counts, width)
+        counts = _mapped_counts(probability_counts, native_qasm)
         counts_source = "probabilities"
     else:
         raise RuntimeError("SpinQ Cloud counts total does not equal requested shots")
@@ -203,8 +304,8 @@ def run_braket(native_qasm: str, shots: int) -> ExecutionResult:
     braket3 = native_qasm.replace('include "stdgates.inc";', "")
     task = LocalSimulator().run(OpenQASMProgram(source=braket3), shots=shots)
     result = task.result()
-    counts = _little_endian(
-        dict(result.measurement_counts), _measurement_width(native_qasm)
+    counts = _mapped_counts(
+        dict(result.measurement_counts), native_qasm, result.measured_qubits
     )
     task_metadata = getattr(result, "task_metadata", None)
     job_id = str(getattr(task_metadata, "id", "") or f"local-braket-{uuid4().hex}")
@@ -241,8 +342,8 @@ def run_braket_real(
         task = device.run(program, s3_destination_folder, shots=shots)
     submitted_at = utc_now()
     result = task.result()
-    counts = _little_endian(
-        dict(result.measurement_counts), _measurement_width(native_qasm)
+    counts = _mapped_counts(
+        dict(result.measurement_counts), native_qasm, result.measured_qubits
     )
     job_id = str(getattr(task, "id", "") or "")
     if not job_id:
