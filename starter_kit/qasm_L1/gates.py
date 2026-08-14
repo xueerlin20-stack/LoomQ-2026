@@ -111,17 +111,20 @@ def _param_after_qubits(emit_name: str) -> Callable[[Gate], List[str]]:
     return render
 
 
-def _originir_phase_gate(angle: float) -> Callable[[Gate], List[str]]:
-    """Render ``sdg``/``tdg`` as the native OriginIR ``U1`` gate.
+def _originir_rz_equivalent(angle: float) -> Callable[[Gate], List[str]]:
+    """Render ``sdg``/``tdg`` as a contract-safe OriginIR ``RZ`` gate.
 
     QPanda's Origin-IR has no dagger keywords (``SDAG``/``TDAG``); per
     gate_identities.md section 1, ``sdg = u1(-pi/2)`` and ``tdg = u1(-pi/4)``.
-    A `U1 q[i],(θ)` is the parameter-after-qubits form pyqpanda parses natively.
+    For a standalone single-qubit gate, section 2 permits replacing ``u1(θ)``
+    with ``rz(θ)`` because they differ only by a global phase.  ``RZ`` belongs
+    to the target contract and is also parsed by pyqpanda, unlike ``U1`` which
+    is executable but absent from the contract's allowed gate names.
     """
 
     def render(gate: Gate) -> List[str]:
         qubit = gate.qubits[0]
-        return [f"U1 q[{qubit.global_index}],({format_param(angle)})"]
+        return [f"RZ q[{qubit.global_index}],({format_param(angle)})"]
 
     return render
 
@@ -146,9 +149,9 @@ _ORIGINIR_GATES = {
     "h": "H",
     "x": "X",
     "s": "S",
-    "sdg": _originir_phase_gate(-math.pi / 2),
+    "sdg": _originir_rz_equivalent(-math.pi / 2),
     "t": "T",
-    "tdg": _originir_phase_gate(-math.pi / 4),
+    "tdg": _originir_rz_equivalent(-math.pi / 4),
     "rz": _param_after_qubits("RZ"),
     "ry": _param_after_qubits("RY"),
     "cx": "CNOT",

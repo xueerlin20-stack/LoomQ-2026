@@ -372,9 +372,9 @@ def run_originq(native_qasm: str, shots: int) -> ExecutionResult:
     """Execute on the official pyqpanda CPUQVM, fed the transpiled OriginIR.
 
     ``_ORIGINIR_GATES`` renders every gate in a pyqpanda-native form: parameter
-    gates as ``RZ q[0],(θ)``/``CR q[0], q[1],(θ)``, and the phase-gate daggers
-    ``sdg``/``tdg`` as native U1 rotations.  The transpile output is therefore
-    fed verbatim to ``convert_originir_str_to_qprog``.
+    gates as ``RZ q[0],(θ)``/``CR q[0], q[1],(θ)``, including contract-safe
+    RZ equivalents for the phase-gate daggers ``sdg``/``tdg``.  The transpile
+    output is therefore fed verbatim to ``convert_originir_str_to_qprog``.
 
     pyqpanda returns little-endian counts keys (``c[0]`` rightmost), matching
     the contract, so no bit reversal is applied here.
