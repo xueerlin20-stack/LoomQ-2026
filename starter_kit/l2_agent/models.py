@@ -17,6 +17,7 @@ class AgentIntent:
 
     task_type: str
     user_goal: str
+    response_language: str = "zh"
     candidate_qasm: Optional[str] = None
     source_qasm: Optional[str] = None
     circuit: Dict[str, Any] = field(default_factory=dict)
@@ -28,6 +29,8 @@ class AgentIntent:
             raise ValueError("unsupported L2 task type: %s" % self.task_type)
         if not isinstance(self.user_goal, str) or not self.user_goal.strip():
             raise ValueError("L2 intent user_goal must be a non-empty string")
+        if self.response_language not in {"zh", "en"}:
+            raise ValueError("L2 intent response_language must be zh or en")
 
 
 @dataclass(frozen=True)
@@ -58,6 +61,7 @@ class AgentResult:
 
     ok: bool
     task_type: str
+    response_language: str = "zh"
     message: str = ""
     qasm: Optional[str] = None
     backend_id: Optional[str] = None
@@ -66,5 +70,12 @@ class AgentResult:
     validation: Dict[str, Any] = field(default_factory=dict)
 
     @classmethod
-    def failure(cls, task_type: str, message: str) -> "AgentResult":
-        return cls(ok=False, task_type=task_type, message=message)
+    def failure(
+        cls, task_type: str, message: str, response_language: str = "zh"
+    ) -> "AgentResult":
+        return cls(
+            ok=False,
+            task_type=task_type,
+            message=message,
+            response_language=response_language,
+        )

@@ -33,13 +33,18 @@ class QASMValidator:
         self._executor = executor
 
     def validate(self, qasm: str, intent: AgentIntent) -> ValidationResult:
+        english = intent.response_language == "en"
         try:
             execution = self._execute(qasm)
         except (SyntaxError, TypeError, ValueError) as exc:
             return ValidationResult(
                 False,
                 "execution_failed",
-                "L1 %s 无法执行候选电路：%s: %s"
+                (
+                    "L1 %s could not execute the candidate circuit: %s: %s"
+                    if english
+                    else "L1 %s 无法执行候选电路：%s: %s"
+                )
                 % (self.target, type(exc).__name__, exc),
                 qasm,
             )
@@ -47,7 +52,11 @@ class QASMValidator:
             return ValidationResult(
                 False,
                 "execution_failed",
-                "L1 %s 本地模拟执行失败：%s: %s"
+                (
+                    "L1 %s local simulation failed: %s: %s"
+                    if english
+                    else "L1 %s 本地模拟执行失败：%s: %s"
+                )
                 % (self.target, type(exc).__name__, exc),
                 qasm,
                 details={"target": self.target, "shots": self.shots},
@@ -62,7 +71,11 @@ class QASMValidator:
             return ValidationResult(
                 False,
                 "execution_failed",
-                "L1 %s 无法执行候选电路：%s: %s"
+                (
+                    "L1 %s could not execute the candidate circuit: %s: %s"
+                    if english
+                    else "L1 %s 无法执行候选电路：%s: %s"
+                )
                 % (self.target, type(exc).__name__, exc),
                 qasm,
             )
@@ -74,7 +87,11 @@ class QASMValidator:
                 return ValidationResult(
                     False,
                     "intent_mismatch",
-                    "用户意图声明 %d 比特，但候选电路声明 %d 比特。"
+                    (
+                        "The request declares %d qubits, but the candidate circuit declares %d."
+                        if english
+                        else "用户意图声明 %d 比特，但候选电路声明 %d 比特。"
+                    )
                     % (declared_qubits, qubits),
                     qasm,
                 )
@@ -90,7 +107,11 @@ class QASMValidator:
                 return ValidationResult(
                     False,
                     "intent_mismatch",
-                    "用户要求全测量，但量子比特 %s 没有测量。"
+                    (
+                        "The request requires full measurement, but qubits %s are not measured."
+                        if english
+                        else "用户要求全测量，但量子比特 %s 没有测量。"
+                    )
                     % ", ".join(str(index) for index in missing),
                     qasm,
                     details={"missing_measurement_qubits": missing},
@@ -105,7 +126,11 @@ class QASMValidator:
             return ValidationResult(
                 False,
                 "execution_failed",
-                "L1 返回结果缺少必要字段。",
+                (
+                    "The L1 result is missing required fields."
+                    if english
+                    else "L1 返回结果缺少必要字段。"
+                ),
                 qasm,
                 repairable=False,
             )
@@ -113,7 +138,9 @@ class QASMValidator:
             return ValidationResult(
                 False,
                 "execution_failed",
-                "L1 返回了无效的 counts。",
+                "L1 returned invalid counts."
+                if english
+                else "L1 返回了无效的 counts。",
                 qasm,
                 repairable=False,
             )
@@ -131,7 +158,12 @@ class QASMValidator:
                 return ValidationResult(
                     False,
                     "intent_mismatch",
-                    "Bell 态必须使用 2 个量子比特，候选电路使用了 %d 个。" % qubits,
+                    (
+                        "A Bell state requires 2 qubits; the candidate circuit uses %d."
+                        if english
+                        else "Bell 态必须使用 2 个量子比特，候选电路使用了 %d 个。"
+                    )
+                    % qubits,
                     qasm,
                     details=details,
                 )
@@ -143,8 +175,13 @@ class QASMValidator:
             return ValidationResult(
                 ok,
                 "verified" if ok else "fidelity_failed",
-                "已在 L1 %s 本地模拟器实际执行 %d shots；%s 分布 Fidelity 为 %.6f。"
-                % (self.target, shots, name, fidelity),
+                (
+                    "Executed %d shots on the L1 %s local simulator; %s distribution fidelity is %.6f."
+                    % (shots, self.target, name, fidelity)
+                    if english
+                    else "已在 L1 %s 本地模拟器实际执行 %d shots；%s 分布 Fidelity 为 %.6f。"
+                    % (self.target, shots, name, fidelity)
+                ),
                 qasm,
                 fidelity=fidelity,
                 details=details,
@@ -153,8 +190,13 @@ class QASMValidator:
         return ValidationResult(
             True,
             "executed_unverified",
-            "已在 L1 %s 本地模拟器实际执行 %d shots；该目标没有独立参考分布，不能自动证明符合用户意图。"
-            % (self.target, shots),
+            (
+                "Executed %d shots on the L1 %s local simulator; this target has no independent reference distribution, so intent correctness cannot be proven automatically."
+                % (shots, self.target)
+                if english
+                else "已在 L1 %s 本地模拟器实际执行 %d shots；该目标没有独立参考分布，不能自动证明符合用户意图。"
+                % (self.target, shots)
+            ),
             qasm,
             details=details,
         )

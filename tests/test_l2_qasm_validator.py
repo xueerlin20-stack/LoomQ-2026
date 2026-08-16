@@ -96,6 +96,23 @@ class QASMValidatorTests(unittest.TestCase):
         self.assertIn("实际执行", result.explanation)
         self.assertIn("不能自动证明", result.explanation)
 
+    def test_english_intent_produces_english_validation_text(self):
+        executor = FakeL1Executor()
+        validator = QASMValidator(executor=executor)
+        intent = AgentIntent(
+            task_type="generate_qasm",
+            user_goal="Generate a three-qubit GHZ state",
+            response_language="en",
+            circuit={"target_state": "ghz", "qubits": 3, "measure_all": True},
+        )
+
+        result = validator.validate(GHZ_QASM, intent)
+
+        self.assertTrue(result.ok)
+        self.assertIn("Executed 4096 shots", result.explanation)
+        self.assertIn("fidelity is 1.000000", result.explanation)
+        self.assertNotIn("实际执行", result.explanation)
+
     def test_measure_all_requires_all_qubits_before_execution(self):
         executor = FakeL1Executor()
         validator = QASMValidator(executor=executor)

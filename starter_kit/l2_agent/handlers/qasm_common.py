@@ -12,7 +12,14 @@ def validate_with_one_repair(
 ) -> AgentResult:
     candidate = intent.candidate_qasm
     if not isinstance(candidate, str) or not candidate.strip():
-        return AgentResult.failure(intent.task_type, "模型没有提供 QASM 候选。")
+        message = (
+            "The model did not provide a QASM candidate."
+            if intent.response_language == "en"
+            else "模型没有提供 QASM 候选。"
+        )
+        return AgentResult.failure(
+            intent.task_type, message, intent.response_language
+        )
 
     validation = context.validator.validate(candidate, intent)
     repaired = False
@@ -27,15 +34,24 @@ def validate_with_one_repair(
         validation = context.validator.validate(candidate, intent)
 
     if not validation.ok:
-        return AgentResult.failure(
-            intent.task_type,
-            "%s：%s"
-            % (
+        if intent.response_language == "en":
+            prefix = (
+                "The circuit still failed validation after one repair"
+                if repaired
+                else "The circuit failed validation"
+            )
+            separator = ": "
+        else:
+            prefix = (
                 "电路在一次修复后仍未通过验证"
                 if repaired
-                else "电路未通过验证",
-                validation.explanation,
-            ),
+                else "电路未通过验证"
+            )
+            separator = "："
+        return AgentResult.failure(
+            intent.task_type,
+            prefix + separator + validation.explanation,
+            intent.response_language,
         )
 
     validation_details = {
@@ -50,6 +66,7 @@ def validate_with_one_repair(
     return AgentResult(
         ok=True,
         task_type=intent.task_type,
+        response_language=intent.response_language,
         qasm=validation.qasm,
         explanation=intent.explanation,
         validation=validation_details,

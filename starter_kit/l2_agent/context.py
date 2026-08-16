@@ -30,7 +30,9 @@ class LLMGateway(Protocol):
 
 
 class BackendSelector(Protocol):
-    def select(self, constraints: Dict[str, Any]) -> BackendSelection:
+    def select(
+        self, constraints: Dict[str, Any], response_language: str = "zh"
+    ) -> BackendSelection:
         """Select a backend from the official capability data."""
 
 

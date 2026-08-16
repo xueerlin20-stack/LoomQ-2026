@@ -138,6 +138,7 @@ class OpenAICompatibleLLMGateway:
     def _intent_from_dict(data: Dict[str, Any]) -> AgentIntent:
         task_type = data.get("task_type")
         user_goal = data.get("user_goal")
+        response_language = data.get("response_language", "zh")
         circuit = data.get("circuit")
         constraints = data.get("backend_constraints")
         candidate_qasm = data.get("candidate_qasm")
@@ -148,6 +149,8 @@ class OpenAICompatibleLLMGateway:
             raise RuntimeError("LoomQ LLM intent has no task_type")
         if not isinstance(user_goal, str) or not user_goal.strip():
             raise RuntimeError("LoomQ LLM intent has no user_goal")
+        if response_language not in {"zh", "en"}:
+            raise RuntimeError("LoomQ LLM response_language must be zh or en")
         if circuit is not None and not isinstance(circuit, dict):
             raise RuntimeError("LoomQ LLM circuit intent must be an object")
         if constraints is not None and not isinstance(constraints, dict):
@@ -163,6 +166,7 @@ class OpenAICompatibleLLMGateway:
         return AgentIntent(
             task_type=task_type.strip(),
             user_goal=user_goal.strip(),
+            response_language=response_language,
             candidate_qasm=candidate_qasm,
             source_qasm=source_qasm,
             circuit=circuit or {},

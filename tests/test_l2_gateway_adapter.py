@@ -43,6 +43,7 @@ def intent_payload(**updates):
     payload = {
         "task_type": "generate_qasm",
         "user_goal": "生成并测量贝尔态",
+        "response_language": "zh",
         "circuit": {"target_state": "bell", "qubits": 2, "measure_all": True},
         "source_qasm": None,
         "backend_constraints": None,
@@ -105,6 +106,28 @@ class AdapterGatewayIntegrationTests(unittest.TestCase):
         self.assertEqual(mocked_call.call_count, 1)
         self.assertIn("OPENQASM 2.0;", reply)
         self.assertIn("cx q[0],q[1];", reply)
+        self.assertIn("运行验证：", reply)
+        self.assertNotIn("Run validation:", reply)
+
+    def test_adapter_english_request_produces_fully_english_output(self):
+        payload = intent_payload(
+            user_goal="Generate and measure a Bell state",
+            response_language="en",
+            explanation="Creates a two-qubit entangled state.",
+        )
+        model_response = completion(json.dumps(payload, ensure_ascii=False))
+
+        with mock.patch.dict(os.environ, ENVIRONMENT, clear=True), mock.patch(
+            "starter_kit.l2_agent.gateway.chat_completion",
+            return_value=model_response,
+        ), mock.patch("starter_kit.adapter.run", side_effect=fake_l1_run):
+            reply = adapter.agent_chat("Generate and measure a Bell state")
+
+        self.assertIn("Generated and validated successfully", reply)
+        self.assertIn("Run validation:", reply)
+        self.assertIn("Executed 4096 shots", reply)
+        self.assertIn("Explanation: Creates a two-qubit entangled state.", reply)
+        self.assertNotIn("已生成", reply)
 
     def test_adapter_backend_flow_uses_gateway_and_real_selector(self):
         payload = intent_payload(
@@ -131,6 +154,34 @@ class AdapterGatewayIntegrationTests(unittest.TestCase):
 
         self.assertEqual(mocked_call.call_count, 1)
         self.assertIn("originq_local_simulator", reply)
+
+    def test_adapter_english_backend_request_uses_english_templates(self):
+        payload = intent_payload(
+            task_type="recommend_backend",
+            user_goal="Run 26 qubits for free without a queue",
+            response_language="en",
+            circuit=None,
+            backend_constraints={
+                "min_qubits": 26,
+                "kind": None,
+                "queue": "none",
+                "cost": "free",
+                "requires_account": None,
+                "platform": None,
+            },
+            candidate_qasm=None,
+            explanation=None,
+        )
+
+        with mock.patch.dict(os.environ, ENVIRONMENT, clear=True), mock.patch(
+            "starter_kit.l2_agent.gateway.chat_completion",
+            return_value=completion(json.dumps(payload)),
+        ):
+            reply = adapter.agent_chat("Run 26 qubits for free without a queue")
+
+        self.assertIn("Recommended backend: originq_local_simulator", reply)
+        self.assertIn("Reason:", reply)
+        self.assertNotIn("推荐后端", reply)
 
     def test_adapter_invalid_candidate_triggers_one_repair_call(self):
         first = intent_payload(

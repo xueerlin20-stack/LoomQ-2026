@@ -60,7 +60,7 @@ class MockBackendSelector:
     def __init__(self):
         self.calls = []
 
-    def select(self, constraints):
+    def select(self, constraints, _response_language="zh"):
         self.calls.append(constraints)
         return BackendSelection(
             selected_id="mock_backend",

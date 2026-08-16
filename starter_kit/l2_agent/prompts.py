@@ -14,6 +14,7 @@ Return this shape:
 {
   "task_type": "generate_qasm | repair_qasm | recommend_backend",
   "user_goal": "short faithful summary",
+  "response_language": "zh | en",
   "circuit": {
     "target_state": null,
     "qubits": null,
@@ -31,6 +32,11 @@ Return this shape:
   "candidate_qasm": null,
   "explanation": null
 }
+
+Set response_language to "zh" when the user writes primarily in Chinese and
+"en" when the user writes primarily in English. user_goal and explanation
+must use that same language. Never answer a Chinese request with an English
+explanation or an English request with a Chinese explanation.
 
 For backend constraints use only these normalized values:
 - kind: simulator, qpu, cloud, or null

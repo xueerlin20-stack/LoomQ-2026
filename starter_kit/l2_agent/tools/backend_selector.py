@@ -26,7 +26,11 @@ class CapabilityBackendSelector:
         self._path = Path(capabilities_path)
         self._backends = self._load_backends(self._path)
 
-    def select(self, constraints: Dict[str, Any]) -> BackendSelection:
+    def select(
+        self, constraints: Dict[str, Any], response_language: str = "zh"
+    ) -> BackendSelection:
+        if response_language not in {"zh", "en"}:
+            raise ValueError("response_language must be zh or en")
         normalized = self._validate_constraints(constraints)
         matches = [
             backend
@@ -38,14 +42,18 @@ class CapabilityBackendSelector:
         if not matches:
             return BackendSelection(
                 selected_id=None,
-                explanation="官方能力表中没有满足全部约束的后端。",
+                explanation=(
+                    "No backend in the official capability table satisfies all constraints."
+                    if response_language == "en"
+                    else "官方能力表中没有满足全部约束的后端。"
+                ),
                 alternatives=self._nearest_alternatives(normalized),
             )
 
         selected = matches[0]
         return BackendSelection(
             selected_id=selected["id"],
-            explanation=self._explain(selected, normalized),
+            explanation=self._explain(selected, normalized, response_language),
             alternatives=[backend["id"] for backend in matches[1:]],
         )
 
@@ -158,7 +166,27 @@ class CapabilityBackendSelector:
         return [backend["id"] for backend in ranked[:2]]
 
     @staticmethod
-    def _explain(backend: Dict[str, Any], constraints: Dict[str, Any]) -> str:
+    def _explain(
+        backend: Dict[str, Any], constraints: Dict[str, Any], language: str
+    ) -> str:
+        if language == "en":
+            facts = ["supports up to %s qubits" % backend["max_qubits"]]
+            if constraints.get("kind") not in {None, "any"}:
+                facts.append("type is %s" % backend["kind"])
+            if constraints.get("queue") not in {None, "any"}:
+                facts.append("queue is %s" % backend["queue"])
+            if constraints.get("cost") not in {None, "any"}:
+                facts.append("cost is %s" % backend["cost"])
+            if constraints.get("requires_account") is not None:
+                facts.append(
+                    "requires an account"
+                    if backend["requires_account"]
+                    else "does not require an account"
+                )
+            return "%s satisfies all constraints: %s." % (
+                backend["id"],
+                ", ".join(facts),
+            )
         facts = ["最多支持 %s 比特" % backend["max_qubits"]]
         if constraints.get("kind") not in {None, "any"}:
             facts.append("类型为 %s" % backend["kind"])
