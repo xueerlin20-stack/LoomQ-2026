@@ -7,3 +7,6 @@ __pycache__/
 *.py[cod]
 
 .venv/
+
+# Local L2 credentials. Commit only the matching .example file.
+starter_kit/.env.l2

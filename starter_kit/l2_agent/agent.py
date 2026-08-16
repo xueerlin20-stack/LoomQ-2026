@@ -18,6 +18,9 @@ class AgentEngine:
         if not isinstance(prompt, str) or not prompt.strip():
             raise ValueError("L2 prompt must be a non-empty string")
 
+        begin_request = getattr(self._context.llm, "begin_request", None)
+        if callable(begin_request):
+            begin_request()
         intent = self._context.llm.understand(prompt)
         intent.validate()
 

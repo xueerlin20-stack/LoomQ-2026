@@ -191,8 +191,13 @@ def main(argv: List[str] = None) -> int:
 
 
 def agent_chat(prompt: str) -> str:
-    """Optional L2 entry point using the documented LOOMQ_LLM_* environment."""
-    raise NotImplementedError("L2 is optional; implement agent_chat(prompt) to enter")
+    """Run the L2 agent using the documented LOOMQ_LLM_* environment."""
+    try:
+        from .l2_agent.factory import create_agent
+    except ImportError:
+        from l2_agent.factory import create_agent
+
+    return create_agent().respond(prompt)
 
 
 def compile_hybrid(hybrid_qasm_str: str) -> Tuple[List[str], str]:
