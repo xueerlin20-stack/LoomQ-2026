@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="用自然语言生成、修复并运行量子电路。">
+  <title>LoomQ Agent · 人人都能使用量子计算</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="ambient ambient-one" aria-hidden="true"></div>
+  <div class="ambient ambient-two" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="LoomQ Agent 首页">
+      <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+      <span>LoomQ <b>Agent</b></span>
+    </a>
+    <div class="runtime-status">
+      <span class="status-dot" aria-hidden="true"></span>
+      <span>DeepSeek 理解 · SpinQit 真运行</span>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" id="welcome">
+      <div class="eyebrow"><span>无需 QASM 知识</span><span>无需平台黑话</span></div>
+      <h1>把你的想法，<br><em>变成一次量子实验。</em></h1>
+      <p>告诉 LoomQ 你想做什么。它会生成或修复电路，在本地 SpinQit 模拟器中真实运行，并把结果讲明白。</p>
+
+      <div class="starter-grid" aria-label="示例任务">
+        <button class="starter-card" data-prompt="生成一个 3 比特 GHZ 态并进行全测量">
+          <span class="starter-number">01</span>
+          <strong>创建第一个纠缠实验</strong>
+          <small>生成 3 比特 GHZ 态并运行</small>
+        </button>
+        <button class="starter-card" data-prompt="我想制备贝尔态，请修复这段代码：H q[0]; CX q[0] q[1]">
+          <span class="starter-number">02</span>
+          <strong>修复运行不了的代码</strong>
+          <small>保持实验目标，自动找错</small>
+        </button>
+        <button class="starter-card" data-prompt="我要运行一个 26 比特电路，必须免费并且不能排队">
+          <span class="starter-number">03</span>
+          <strong>选择合适的运行平台</strong>
+          <small>根据比特数、费用和排队筛选</small>
+        </button>
+      </div>
+    </section>
+
+    <section class="workspace" aria-label="Agent 对话区">
+      <div class="conversation" id="conversation" aria-live="polite">
+        <article class="message agent-message intro-message">
+          <div class="avatar" aria-hidden="true">LQ</div>
+          <div class="message-body">
+            <div class="message-meta">LoomQ Agent</div>
+            <p>你好！不用担心量子门、寄存器或平台格式。试着描述一个实验，粘贴一段错误代码，或者告诉我你的运行条件。</p>
+          </div>
+        </article>
+      </div>
+
+      <form class="composer" id="composer">
+        <label class="sr-only" for="prompt">描述你的量子计算需求</label>
+        <textarea id="prompt" rows="2" maxlength="12000" placeholder="例如：生成一个 3 比特 GHZ 态并测量全部量子比特…" required></textarea>
+        <div class="composer-footer">
+          <span><kbd>Enter</kbd> 发送 · <kbd>Shift</kbd> + <kbd>Enter</kbd> 换行</span>
+          <button class="send-button" id="send" type="submit">
+            <span>开始实验</span><span aria-hidden="true">↗</span>
+          </button>
+        </div>
+      </form>
+      <p class="privacy-note">API Key 只保存在本机配置中，不会发送到这个网页。</p>
+    </section>
+  </main>
+
+  <template id="loading-template">
+    <article class="message agent-message loading-message">
+      <div class="avatar" aria-hidden="true">LQ</div>
+      <div class="message-body">
+        <div class="message-meta">LoomQ Agent</div>
+        <div class="progress-line"><span></span><span></span><span></span></div>
+        <p class="loading-label">正在理解需求并准备量子实验…</p>
+      </div>
+    </article>
+  </template>
+
+  <script src="/app.js" defer></script>
+</body>
+</html>

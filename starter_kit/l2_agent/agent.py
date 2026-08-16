@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from .context import AgentContext
+from .models import AgentResult
 from .registry import HandlerRegistry
 from .renderer import render_result
 
@@ -15,6 +16,10 @@ class AgentEngine:
         self._registry = registry
 
     def respond(self, prompt: str) -> str:
+        return render_result(self.execute(prompt))
+
+    def execute(self, prompt: str) -> AgentResult:
+        """Run one request and return structured data for interactive clients."""
         if not isinstance(prompt, str) or not prompt.strip():
             raise ValueError("L2 prompt must be a non-empty string")
 
@@ -28,4 +33,4 @@ class AgentEngine:
         if handler is None:
             raise ValueError("no handler registered for task: %s" % intent.task_type)
 
-        return render_result(handler.execute(intent, self._context))
+        return handler.execute(intent, self._context)

@@ -141,6 +141,14 @@ python3 starter_kit/run_l2.py "生成一个 3 比特 GHZ 态并进行全测量"
 
 真实 `.env.l2` 已被 Git 忽略，只有不含密钥的 `.env.l2.example` 会进入提交。启动器不会显示 API Key，命令行已存在的 `LOOMQ_LLM_*` 变量优先于文件值。如果系统 Python 没有 SpinQit、但 `starter_kit/.venv` 可用，启动器会自动切换到该虚拟环境，以便 Agent 通过 L1 SpinQit 本地模拟器实际运行电路。正式评测仍由组委会直接注入环境变量，不依赖这个本地文件。
 
+零基础用户可以直接启动网页：
+
+```bash
+python3 starter_kit/web_app.py
+```
+
+启动器会自动选择项目虚拟环境、读取 `.env.l2` 并打开浏览器。网页和 `adapter.agent_chat()` 复用同一个 Agent 核心；DeepSeek Key 只保留在 Python 服务端，不会进入浏览器。页面会展示生成的 QASM、SpinQit 本地执行说明、counts 分布和 Fidelity。
+
 缺少配置时应立即失败，错误信息不得包含任何 Key。正式评测时，组委会将统一注入 DeepSeek 模型服务及调用预算；评测环境不保证能够访问其他外部网络服务。若参加 L2，请把 `submission.yaml` 中的 `levels.l2` 与 `network.required_for_l2` 同时改为 `true`；`allowed_hosts` 不用于申请正式评测中的任意公网访问。
 
 ## 版本政策
