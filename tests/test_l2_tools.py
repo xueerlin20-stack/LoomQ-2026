@@ -1,80 +1,7 @@
 import unittest
 
 from starter_kit.l2_agent import AgentContext, AgentEngine, AgentIntent, default_registry
-from starter_kit.l2_agent.tools import CapabilityBackendSelector, LoomQQasmValidator
-
-
-BELL_QASM = """OPENQASM 2.0;
-include "qelib1.inc";
-qreg q[2];
-creg c[2];
-h q[0];
-cx q[0],q[1];
-measure q -> c;"""
-
-
-class RealQasmValidatorTests(unittest.TestCase):
-    def setUp(self):
-        self.validator = LoomQQasmValidator()
-
-    def test_valid_qasm_passes_the_existing_l1_pipeline(self):
-        result = self.validator.validate(BELL_QASM)
-
-        self.assertTrue(result.ok, result.error)
-        self.assertEqual(result.qasm, BELL_QASM)
-
-    def test_markdown_fence_is_safely_removed(self):
-        result = self.validator.validate("说明文字\n```qasm\n%s\n```" % BELL_QASM)
-
-        self.assertTrue(result.ok, result.error)
-        self.assertEqual(result.qasm, BELL_QASM)
-
-    def test_missing_version_header_is_rejected(self):
-        result = self.validator.validate(
-            'include "qelib1.inc";\nqreg q[1];\nh q[0];'
-        )
-
-        self.assertFalse(result.ok)
-        self.assertIn("OPENQASM 2.0", result.error)
-
-    def test_missing_standard_library_is_rejected(self):
-        result = self.validator.validate("OPENQASM 2.0;\nqreg q[1];\nh q[0];")
-
-        self.assertFalse(result.ok)
-        self.assertIn("qelib1.inc", result.error)
-
-    def test_unsupported_gate_is_rejected_by_l1_parser(self):
-        result = self.validator.validate(
-            """OPENQASM 2.0;
-include "qelib1.inc";
-qreg q[1];
-u3(0,0,0) q[0];"""
-        )
-
-        self.assertFalse(result.ok)
-        self.assertIn("unsupported gate", result.error)
-
-    def test_classical_bit_out_of_range_is_rejected(self):
-        result = self.validator.validate(
-            """OPENQASM 2.0;
-include "qelib1.inc";
-qreg q[1];
-creg c[1];
-measure q[0] -> c[2];"""
-        )
-
-        self.assertFalse(result.ok)
-        self.assertIn("classical bit index out of range", result.error)
-
-    def test_no_quantum_register_is_rejected(self):
-        result = self.validator.validate(
-            """OPENQASM 2.0;
-include "qelib1.inc";
-creg c[1];"""
-        )
-
-        self.assertFalse(result.ok)
-        self.assertIn("no quantum register", result.error)
+from starter_kit.l2_agent.tools import CapabilityBackendSelector
 
 
 class RealBackendSelectorTests(unittest.TestCase):
@@ -144,26 +71,12 @@ class MockLLMWithRealTools:
         raise AssertionError("valid test QASM must not trigger model repair")
 
 
+class UnusedQASMValidator:
+    def validate(self, _qasm, _intent):
+        raise AssertionError("backend recommendation must not run a circuit")
+
+
 class AgentWithRealToolsTests(unittest.TestCase):
-    def test_mock_model_and_real_qasm_validator_complete_the_agent_flow(self):
-        llm = MockLLMWithRealTools(
-            AgentIntent(
-                task_type="generate_qasm",
-                user_goal="生成贝尔态",
-                candidate_qasm=BELL_QASM,
-            )
-        )
-        context = AgentContext(
-            llm=llm,
-            qasm_validator=LoomQQasmValidator(),
-            backend_selector=CapabilityBackendSelector(),
-        )
-
-        reply = AgentEngine(context, default_registry()).respond("生成贝尔态")
-
-        self.assertEqual(llm.understand_count, 1)
-        self.assertIn(BELL_QASM, reply)
-
     def test_mock_model_and_real_selector_complete_the_agent_flow(self):
         llm = MockLLMWithRealTools(
             AgentIntent(
@@ -178,8 +91,8 @@ class AgentWithRealToolsTests(unittest.TestCase):
         )
         context = AgentContext(
             llm=llm,
-            qasm_validator=LoomQQasmValidator(),
             backend_selector=CapabilityBackendSelector(),
+            validator=UnusedQASMValidator(),
         )
 
         reply = AgentEngine(context, default_registry()).respond(

@@ -5,7 +5,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Dict, Protocol
 
-from .models import AgentIntent, BackendSelection, ValidationResult
+from .models import (
+    AgentIntent,
+    BackendSelection,
+    ValidationResult,
+)
 
 
 class LLMGateway(Protocol):
@@ -25,14 +29,14 @@ class LLMGateway(Protocol):
         """Repair one invalid QASM candidate without changing the goal."""
 
 
-class QasmValidator(Protocol):
-    def validate(self, qasm: str) -> ValidationResult:
-        """Validate and normalize one OpenQASM 2.0 candidate."""
-
-
 class BackendSelector(Protocol):
     def select(self, constraints: Dict[str, Any]) -> BackendSelection:
         """Select a backend from the official capability data."""
+
+
+class ValidatorProtocol(Protocol):
+    def validate(self, qasm: str, intent: AgentIntent) -> ValidationResult:
+        """Run a circuit through L1 and check its execution result."""
 
 
 @dataclass(frozen=True)
@@ -40,5 +44,5 @@ class AgentContext:
     """Dependencies available to all handlers for one agent instance."""
 
     llm: LLMGateway
-    qasm_validator: QasmValidator
     backend_selector: BackendSelector
+    validator: ValidatorProtocol

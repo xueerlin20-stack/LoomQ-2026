@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import os
 import sys
 from pathlib import Path
@@ -33,6 +34,27 @@ REQUIRED_ENVIRONMENT = (
 PLACEHOLDER_VALUES = frozenset(
     {"placeholder", "placeholder-key", "your-key", "<your_own_key>"}
 )
+
+
+def reexec_with_bundled_venv_if_needed() -> None:
+    """Use starter_kit/.venv automatically when system Python lacks SpinQit."""
+    if importlib.util.find_spec("spinqit") is not None:
+        return
+    if os.name == "nt":
+        bundled_python = Path(__file__).resolve().parent / ".venv" / "Scripts" / "python.exe"
+    else:
+        bundled_python = Path(__file__).resolve().parent / ".venv" / "bin" / "python"
+    if not bundled_python.is_file():
+        return
+    try:
+        if bundled_python.resolve() == Path(sys.executable).resolve():
+            return
+    except OSError:
+        pass
+    os.execv(
+        str(bundled_python),
+        [str(bundled_python), str(Path(__file__).resolve()), *sys.argv[1:]],
+    )
 
 
 def read_env_file(path: Path) -> Dict[str, str]:
@@ -130,4 +152,5 @@ def main(argv=None) -> int:
 
 
 if __name__ == "__main__":
+    reexec_with_bundled_venv_if_needed()
     sys.exit(main())

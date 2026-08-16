@@ -49,6 +49,9 @@ values or pi expressions. Declare all qreg and creg registers before use.
 Use lowercase gate names, comma-separated multi-qubit operands, semicolons,
 and valid measurements. Preserve the requested target state and measurement
 intent. Do not add unsupported gates or custom gate definitions.
+When the target is a GHZ state use target_state "ghz"; for a Bell state use
+"bell". Otherwise use a concise lowercase target label or null. The circuit
+qubits field must match the qreg size in candidate_qasm.
 """.strip()
 
 

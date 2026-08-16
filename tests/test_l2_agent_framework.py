@@ -36,17 +36,24 @@ class MockLLM:
         return self.repaired_qasm
 
 
-class MockQasmValidator:
-    """Accepts complete OpenQASM and rejects the test marker BROKEN."""
+class MockQASMValidator:
+    """Represents the single run-and-counts validation boundary."""
 
     def __init__(self):
         self.calls = []
 
-    def validate(self, qasm):
+    def validate(self, qasm, _intent):
         self.calls.append(qasm)
         if qasm == "BROKEN":
-            return ValidationResult(False, qasm, "mock parser rejected QASM")
-        return ValidationResult(True, qasm.strip())
+            return ValidationResult(
+                False, "execution_failed", "mock L1 run rejected QASM", qasm
+            )
+        return ValidationResult(
+            True,
+            "verified",
+            "mock L1 run and counts passed",
+            qasm.strip(),
+        )
 
 
 class MockBackendSelector:
@@ -64,12 +71,12 @@ class MockBackendSelector:
 
 def build_agent(intent, repaired_qasm=VALID_QASM):
     llm = MockLLM(intent, repaired_qasm)
-    validator = MockQasmValidator()
+    validator = MockQASMValidator()
     selector = MockBackendSelector()
     context = AgentContext(
         llm=llm,
-        qasm_validator=validator,
         backend_selector=selector,
+        validator=validator,
     )
     return AgentEngine(context, default_registry()), llm, validator, selector
 
@@ -109,7 +116,7 @@ class L2AgentFrameworkTests(unittest.TestCase):
         self.assertEqual(llm.repair_calls[0]["source_qasm"], "H q[0]")
         self.assertEqual(
             llm.repair_calls[0]["validation_error"],
-            "mock parser rejected QASM",
+            "mock L1 run rejected QASM",
         )
         self.assertEqual(selector.calls, [])
         self.assertIn("OPENQASM 2.0;", reply)

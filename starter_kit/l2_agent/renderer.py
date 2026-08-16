@@ -11,8 +11,13 @@ def render_result(result: AgentResult) -> str:
         explanation = (
             "\n\n说明：%s" % result.explanation if result.explanation else ""
         )
-        return "已生成并通过 LoomQ 验证。\n\n```qasm\n%s\n```%s" % (
+        semantic = ""
+        validation_text = result.validation.get("explanation")
+        if validation_text:
+            semantic = "\n\n运行验证：%s" % validation_text
+        return "已生成并通过 LoomQ 验证。\n\n```qasm\n%s\n```%s%s" % (
             result.qasm.strip(),
+            semantic,
             explanation,
         )
 

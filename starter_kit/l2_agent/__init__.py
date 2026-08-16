@@ -7,7 +7,12 @@ can be added without changing the orchestration layer later.
 
 from .agent import AgentEngine
 from .context import AgentContext
-from .models import AgentIntent, AgentResult, BackendSelection, ValidationResult
+from .models import (
+    AgentIntent,
+    AgentResult,
+    BackendSelection,
+    ValidationResult,
+)
 from .registry import HandlerRegistry, default_registry
 
 __all__ = [

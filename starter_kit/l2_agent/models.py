@@ -32,11 +32,15 @@ class AgentIntent:
 
 @dataclass(frozen=True)
 class ValidationResult:
-    """Result returned by the QASM validation tool."""
+    """Result of running a candidate through L1 and checking its output."""
 
     ok: bool
+    status: str
+    explanation: str
     qasm: str
-    error: Optional[str] = None
+    fidelity: Optional[float] = None
+    details: Dict[str, Any] = field(default_factory=dict)
+    repairable: bool = True
 
 
 @dataclass(frozen=True)

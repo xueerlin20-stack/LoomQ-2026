@@ -5,6 +5,7 @@ from unittest import mock
 
 from starter_kit import adapter
 from starter_kit.l2_agent.gateway import OpenAICompatibleLLMGateway
+from starter_kit.qasm_L1.parser import parse_qasm
 
 
 ENVIRONMENT = {
@@ -25,6 +26,17 @@ measure q -> c;"""
 
 def completion(content):
     return {"choices": [{"message": {"role": "assistant", "content": content}}]}
+
+
+def fake_l1_run(_qasm, target, shots):
+    parse_qasm(_qasm)
+    return {
+        "backend": target,
+        "job_id": "local-mocked-spinq-job",
+        "shots": shots,
+        "counts": {"00": shots // 2, "11": shots - shots // 2},
+        "bit_order": "little",
+    }
 
 
 def intent_payload(**updates):
@@ -87,7 +99,7 @@ class AdapterGatewayIntegrationTests(unittest.TestCase):
         with mock.patch.dict(os.environ, ENVIRONMENT, clear=True), mock.patch(
             "starter_kit.l2_agent.gateway.chat_completion",
             return_value=model_response,
-        ) as mocked_call:
+        ) as mocked_call, mock.patch("starter_kit.adapter.run", side_effect=fake_l1_run):
             reply = adapter.agent_chat("生成一个贝尔态并测量")
 
         self.assertEqual(mocked_call.call_count, 1)
@@ -135,14 +147,14 @@ class AdapterGatewayIntegrationTests(unittest.TestCase):
         with mock.patch.dict(os.environ, ENVIRONMENT, clear=True), mock.patch(
             "starter_kit.l2_agent.gateway.chat_completion",
             side_effect=responses,
-        ) as mocked_call:
+        ) as mocked_call, mock.patch("starter_kit.adapter.run", side_effect=fake_l1_run):
             reply = adapter.agent_chat("保持贝尔态目标并修复这段错误代码")
 
         self.assertEqual(mocked_call.call_count, 2)
         repair_messages = mocked_call.call_args_list[1].args[0]
         repair_input = json.loads(repair_messages[-1]["content"])
         self.assertEqual(repair_input["original_source_qasm"], "H q[0]; CX q[0] q[1]")
-        self.assertIn("OPENQASM 2.0", repair_input["validator_error"])
+        self.assertIn("OpenQASM 2.0", repair_input["validator_error"])
         self.assertIn(BELL_QASM, reply)
 
     def test_adapter_missing_environment_fails_without_network_access(self):

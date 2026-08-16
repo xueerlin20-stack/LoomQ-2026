@@ -14,29 +14,43 @@ def validate_with_one_repair(
     if not isinstance(candidate, str) or not candidate.strip():
         return AgentResult.failure(intent.task_type, "模型没有提供 QASM 候选。")
 
-    validation = context.qasm_validator.validate(candidate)
+    validation = context.validator.validate(candidate, intent)
     repaired = False
-    if not validation.ok:
+    if not validation.ok and validation.repairable:
         candidate = context.llm.repair_qasm(
             user_goal=intent.user_goal,
             broken_qasm=validation.qasm,
-            validation_error=validation.error or "unknown validation error",
+            validation_error=validation.explanation,
             source_qasm=intent.source_qasm,
         )
         repaired = True
-        validation = context.qasm_validator.validate(candidate)
+        validation = context.validator.validate(candidate, intent)
 
     if not validation.ok:
         return AgentResult.failure(
             intent.task_type,
-            "QASM 在一次修复后仍未通过验证：%s"
-            % (validation.error or "unknown validation error"),
+            "%s：%s"
+            % (
+                "电路在一次修复后仍未通过验证"
+                if repaired
+                else "电路未通过验证",
+                validation.explanation,
+            ),
         )
+
+    validation_details = {
+        "status": validation.status,
+        "explanation": validation.explanation,
+        "repaired": repaired,
+        **validation.details,
+    }
+    if validation.fidelity is not None:
+        validation_details["fidelity"] = validation.fidelity
 
     return AgentResult(
         ok=True,
         task_type=intent.task_type,
         qasm=validation.qasm,
         explanation=intent.explanation,
-        validation={"syntax": "passed", "repaired": repaired},
+        validation=validation_details,
     )
