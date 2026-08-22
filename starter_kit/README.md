@@ -147,9 +147,11 @@ python3 starter_kit/run_l2.py "生成一个 3 比特 GHZ 态并进行全测量"
 python3 starter_kit/web_app.py
 ```
 
-启动器会自动选择项目虚拟环境、读取 `.env.l2` 并打开浏览器。网页和 `adapter.agent_chat()` 复用同一个 Agent 核心；DeepSeek Key 只保留在 Python 服务端，不会进入浏览器。页面会展示生成的 QASM、SpinQit 本地执行说明、counts 分布和 Fidelity。
+网页前后端按职责拆分，模块边界与扩展约定见 [`web/README.md`](web/README.md)。
 
-缺少配置时应立即失败，错误信息不得包含任何 Key。正式评测时，组委会将统一注入 DeepSeek 模型服务及调用预算；评测环境不保证能够访问其他外部网络服务。若参加 L2，请把 `submission.yaml` 中的 `levels.l2` 与 `network.required_for_l2` 同时改为 `true`；`allowed_hosts` 不用于申请正式评测中的任意公网访问。
+启动器会自动选择项目虚拟环境、读取 `.env.l2` 并打开浏览器。网页和 `adapter.agent_chat()` 复用同一个 Agent 核心；DeepSeek Key 只会由浏览器提交给本机服务、写入已被 Git 忽略的 `.env.l2`，配置检查接口不会回显 Key。页面会展示生成的 QASM、SpinQit 本地执行说明、counts 分布和 Fidelity。
+
+缺少配置时网页仍会启动，并打开首次运行向导检查 API 根地址、API Key、模型和请求超时；保存有效配置后即可继续。向导还会询问量子知识背景，并按用户选择提供概念速览。命令行启动器 `run_l2.py` 仍保持缺少配置时立即失败，所有错误信息都不得包含任何 Key。正式评测时，组委会将统一注入 DeepSeek 模型服务及调用预算；评测环境不保证能够访问其他外部网络服务。若参加 L2，请把 `submission.yaml` 中的 `levels.l2` 与 `network.required_for_l2` 同时改为 `true`；`allowed_hosts` 不用于申请正式评测中的任意公网访问。
 
 ## 版本政策
 

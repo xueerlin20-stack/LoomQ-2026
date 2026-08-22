@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional
 
 
 SUPPORTED_TASK_TYPES = frozenset(
-    {"generate_qasm", "repair_qasm", "recommend_backend"}
+    {"generate_qasm", "repair_qasm", "recommend_backend", "clarify"}
 )
 
 

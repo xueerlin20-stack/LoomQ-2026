@@ -17,8 +17,9 @@
       <span>LoomQ <b>Agent</b></span>
     </a>
     <div class="runtime-status">
-      <span class="status-dot" aria-hidden="true"></span>
-      <span>DeepSeek 理解 · SpinQit 真运行</span>
+      <span class="status-dot" id="status-dot" aria-hidden="true"></span>
+      <span id="runtime-label">正在检查运行环境…</span>
+      <button class="settings-button" id="open-settings" type="button">运行设置</button>
     </div>
   </header>
 
@@ -28,61 +29,258 @@
       <h1>把你的想法，<br><em>变成一次量子实验。</em></h1>
       <p>告诉 LoomQ 你想做什么。它会生成或修复电路，在本地 SpinQit 模拟器中真实运行，并把结果讲明白。</p>
 
-      <div class="starter-grid" aria-label="示例任务">
-        <button class="starter-card" data-prompt="生成一个 3 比特 GHZ 态并进行全测量">
-          <span class="starter-number">01</span>
-          <strong>创建第一个纠缠实验</strong>
-          <small>生成 3 比特 GHZ 态并运行</small>
+      <div class="portal-grid" aria-label="LoomQ 功能入口">
+        <button class="portal-card portal-guide" id="open-guide" type="button">
+          <span class="portal-index">01 · FIRST FLIGHT</span>
+          <span class="portal-symbol" aria-hidden="true">Q</span>
+          <strong>新手引导</strong>
+          <small>选择讲解深度，亲手运行第一个两比特电路。</small>
+          <span class="portal-action">开始引导 →</span>
         </button>
-        <button class="starter-card" data-prompt="我想制备贝尔态，请修复这段代码：H q[0]; CX q[0] q[1]">
-          <span class="starter-number">02</span>
-          <strong>修复运行不了的代码</strong>
-          <small>保持实验目标，自动找错</small>
+        <button class="portal-card" id="open-config" type="button">
+          <span class="portal-index">02 · SETUP</span>
+          <span class="portal-symbol" aria-hidden="true">⌁</span>
+          <strong>运行配置</strong>
+          <small>检查模型地址、凭证、模型名称和请求超时。</small>
+          <span class="portal-action">检查配置 →</span>
         </button>
-        <button class="starter-card" data-prompt="我要运行一个 26 比特电路，必须免费并且不能排队">
-          <span class="starter-number">03</span>
-          <strong>选择合适的运行平台</strong>
-          <small>根据比特数、费用和排队筛选</small>
-        </button>
+        <a class="portal-card portal-workspace" href="/workspace.html">
+          <span class="portal-index">03 · WORKSPACE</span>
+          <span class="portal-symbol" aria-hidden="true">↗</span>
+          <strong>进入工作台</strong>
+          <small>设计、修改、解释和运行量子电路。</small>
+          <span class="portal-action">打开新页面 →</span>
+        </a>
       </div>
-    </section>
-
-    <section class="workspace" aria-label="Agent 对话区">
-      <div class="conversation" id="conversation" aria-live="polite">
-        <article class="message agent-message intro-message">
-          <div class="avatar" aria-hidden="true">LQ</div>
-          <div class="message-body">
-            <div class="message-meta">LoomQ Agent</div>
-            <p>你好！不用担心量子门、寄存器或平台格式。试着描述一个实验，粘贴一段错误代码，或者告诉我你的运行条件。</p>
-          </div>
-        </article>
-      </div>
-
-      <form class="composer" id="composer">
-        <label class="sr-only" for="prompt">描述你的量子计算需求</label>
-        <textarea id="prompt" rows="2" maxlength="12000" placeholder="例如：生成一个 3 比特 GHZ 态并测量全部量子比特…" required></textarea>
-        <div class="composer-footer">
-          <span><kbd>Enter</kbd> 发送 · <kbd>Shift</kbd> + <kbd>Enter</kbd> 换行</span>
-          <button class="send-button" id="send" type="submit">
-            <span>开始实验</span><span aria-hidden="true">↗</span>
-          </button>
-        </div>
-      </form>
-      <p class="privacy-note">API Key 只保存在本机配置中，不会发送到这个网页。</p>
     </section>
   </main>
 
-  <template id="loading-template">
-    <article class="message agent-message loading-message">
-      <div class="avatar" aria-hidden="true">LQ</div>
-      <div class="message-body">
-        <div class="message-meta">LoomQ Agent</div>
-        <div class="progress-line"><span></span><span></span><span></span></div>
-        <p class="loading-label">正在理解需求并准备量子实验…</p>
-      </div>
-    </article>
-  </template>
+  <dialog class="onboarding" id="onboarding" aria-labelledby="onboarding-title">
+    <div class="onboarding-shell">
+      <aside class="onboarding-story" aria-hidden="true">
+        <span class="story-kicker">FIRST FLIGHT</span>
+        <div class="orbit-visual"><i></i><i></i><i></i><b>Q</b></div>
+        <p>每次量子实验都从一个普通问题开始。我们先把运行环境接好，再从最基础的概念走进第一个电路。</p>
+        <ol class="step-rail">
+          <li class="is-current" data-rail-step="config"><span>1</span>连接模型</li>
+          <li data-rail-step="profile"><span>2</span>选择讲解方式</li>
+          <li data-rail-step="basics"><span>3</span>认识基本概念</li>
+          <li data-rail-step="ready"><span>4</span>开始第一次实验</li>
+        </ol>
+      </aside>
 
-  <script src="/app.js" defer></script>
+      <section class="onboarding-content">
+        <button class="dialog-close" id="close-onboarding" type="button" aria-label="关闭引导">×</button>
+
+        <div class="onboarding-step" data-step="config">
+          <span class="step-label">步骤 1 / 4 · 运行环境</span>
+          <h2 id="onboarding-title">先连接你的模型</h2>
+          <p class="step-intro">LoomQ 会自动检查四项本机配置。带绿色标记的项目已经就绪；API Key 不会显示或回传。</p>
+          <form id="config-form" class="config-form">
+            <div id="config-fields"></div>
+            <p class="form-error" id="config-error" role="alert"></p>
+            <div class="dialog-actions">
+              <span class="local-only">只写入本机 <code>.env.l2</code></span>
+              <button class="primary-action" type="submit">保存并继续 <span>→</span></button>
+            </div>
+          </form>
+        </div>
+
+        <div class="onboarding-step" data-step="profile" hidden>
+          <span class="step-label">步骤 2 / 4 · 个性化</span>
+          <h2>你对量子计算熟悉吗？</h2>
+          <p class="step-intro">没有标准答案。这个选择只会改变 LoomQ 的讲解方式，你之后可以随时修改。</p>
+          <div class="profile-options" role="radiogroup" aria-label="量子知识背景">
+            <button class="profile-card" type="button" data-profile="new">
+              <span class="profile-icon">○</span><strong>第一次接触</strong>
+              <small>默认开启基础概念与示例电路，从零开始</small>
+            </button>
+            <button class="profile-card" type="button" data-profile="some">
+              <span class="profile-icon">◐</span><strong>了解一些</strong>
+              <small>默认跳过基础概念，直接看示例电路</small>
+            </button>
+            <button class="profile-card" type="button" data-profile="expert">
+              <span class="profile-icon">●</span><strong>有量子背景</strong>
+              <small>默认跳过两个模块，直接进入工作台</small>
+            </button>
+          </div>
+          <div class="learning-modules" aria-label="选择新手学习模块">
+            <label class="explain-toggle">
+              <span><strong>基础概念科普</strong><small>认识量子比特、量子门、电路和测量</small></span>
+              <input id="module-concept-basics" type="checkbox" checked>
+              <i aria-hidden="true"></i>
+            </label>
+            <label class="explain-toggle">
+              <span><strong>示例电路互动</strong><small>亲手运行女性法律援助场景的 Bell 电路</small></span>
+              <input id="module-example-circuit" type="checkbox" checked>
+              <i aria-hidden="true"></i>
+            </label>
+          </div>
+          <div class="dialog-actions align-right">
+            <button class="text-action" type="button" data-back="config">返回</button>
+            <button class="primary-action" id="save-profile" type="button" disabled>继续 <span>→</span></button>
+          </div>
+        </div>
+
+        <div class="onboarding-step" data-step="basics" hidden>
+          <span class="step-label">步骤 3 / 4 · 基础概念</span>
+          <h2>先认识电路里的四样东西</h2>
+          <p class="step-intro">不需要背公式。先知道信息放在哪里、指令怎样改变它，以及我们最后如何读出答案。</p>
+
+          <div class="concept-explorer" id="concept-basics" data-active-concept="qubit" data-qubit-state="zero">
+            <aside class="concept-sidebar" aria-label="基础概念目录">
+              <span>概念目录</span>
+              <button type="button" data-concept-target="qubit" aria-current="step"><b>01</b><strong>量子比特</strong></button>
+              <button type="button" data-concept-target="gate"><b>02</b><strong>量子门</strong></button>
+              <button type="button" data-concept-target="circuit"><b>03</b><strong>量子电路</strong></button>
+              <button type="button" data-concept-target="measurement"><b>04</b><strong>测量</strong></button>
+            </aside>
+
+            <section class="concept-focus-card" aria-live="polite">
+              <header><span id="concept-position">概念 1 / 4</span></header>
+
+              <article class="concept-panel" data-concept-panel="qubit">
+                <h3>量子比特，像一枚正在旋转的硬币</h3>
+                <div class="qubit-story-copy">
+                  <section>
+                    <span>普通比特</span>
+                    <h4>像房间里的灯开关</h4>
+                    <p>“啪”的一声：关着是 <code>0</code>，打开是 <code>1</code>。查看之前，答案就已经确定。</p>
+                  </section>
+                  <section class="is-quantum">
+                    <span>量子比特</span>
+                    <h4>像一枚仍在旋转的硬币</h4>
+                    <p>它像一个<strong>自带概率的比特</strong>：硬币还没停下时，正面和反面都有可能；测量前，<code>0</code> 和 <code>1</code> 也都有机会出现。</p>
+                  </section>
+                  <section>
+                    <span>测量</span>
+                    <h4>像在某一刻按下快门</h4>
+                    <p>照片最终只会留下一个结果。重复很多次，才会看出 <code>0</code> 和 <code>1</code> 各自出现的概率。</p>
+                  </section>
+                </div>
+                <p class="qubit-takeaway"><b>记住：</b>测量一次只得到一个答案；多做几次，才能看见概率。</p>
+              </article>
+
+              <article class="concept-panel" data-concept-panel="gate" hidden>
+                <h3>量子门，是作用在量子比特上的指令</h3>
+                <p>从同一个 |0⟩ 起点选择一种门。点击后，门会沿线路加载，再显示它造成的变化。</p>
+                <div class="gate-focus-demo">
+                  <div class="gate-circuit-demo" aria-label="量子门加载到电路线的动画">
+                    <div class="gate-wire">
+                      <span class="gate-wire-input">|0⟩</span>
+                      <span class="gate-track" aria-hidden="true"><i></i></span>
+                      <b id="basic-gate-chip" class="gate-chip" data-gate="ready">准备</b>
+                      <span class="gate-wire-output" id="basic-gate-state">|0⟩</span>
+                    </div>
+                    <div class="gate-wire-labels"><span>输入</span><strong id="basic-gate-loading">尚未加载量子门</strong><span>状态</span></div>
+                  </div>
+                  <div class="gate-demo-controls" aria-label="尝试量子门">
+                    <button type="button" data-basic-action="zero" aria-pressed="true">准备 |0⟩</button>
+                    <button type="button" data-basic-action="x" aria-pressed="false">加载 X 门</button>
+                    <button type="button" data-basic-action="h" aria-pressed="false">加载 H 门</button>
+                  </div>
+                  <p id="basic-gate-narration">从确定的 0 状态开始。</p>
+                </div>
+              </article>
+
+              <article class="concept-panel" data-concept-panel="circuit" hidden>
+                <h3>量子电路，是一次实验的执行顺序</h3>
+                <p>沿着线路从左向右读：先准备量子比特，再经过量子门，最后测量。</p>
+                <div class="circuit-focus-flow" aria-label="量子电路从左到右的三个阶段">
+                  <span><b>①</b><strong>准备</strong><small>|0⟩</small></span><i>→</i>
+                  <span><b>②</b><strong>量子门</strong><small>H / X</small></span><i>→</i>
+                  <span><b>③</b><strong>测量</strong><small>0 或 1</small></span>
+                </div>
+                <div class="concept-one-line">电路图不是机器内部的照片，而是一份从左到右执行的实验说明。</div>
+              </article>
+
+              <article class="concept-panel" data-concept-panel="measurement" hidden>
+                <h3>测量一次，只会得到一个普通结果</h3>
+                <p>下面假设 H 门已经让 0 和 1 机会相等。多测几次，才能逐渐看见概率规律。</p>
+                <div class="measurement-focus-demo">
+                  <button type="button" data-basic-action="measure">测量一次 <span>⌁</span></button>
+                  <strong id="basic-measure-result">等待测量</strong>
+                  <p id="basic-measure-counts">已测量 0 次 · 0：0 次 · 1：0 次</p>
+                </div>
+              </article>
+
+              <footer>
+                <button type="button" id="next-concept">下一个：量子门 →</button>
+              </footer>
+            </section>
+          </div>
+          <div class="dialog-actions align-right">
+            <button class="text-action" type="button" data-back="profile">返回</button>
+            <button class="primary-action" id="continue-basics" type="button">我理解了，进入电路 <span>→</span></button>
+          </div>
+        </div>
+
+        <div class="onboarding-step" data-step="ready" hidden>
+          <span class="step-label">步骤 4 / 4 · 互动电路</span>
+          <div id="concept-primer" class="quantum-lab">
+            <div class="lab-heading">
+              <div>
+                <h2>亲手运行第一个量子电路</h2>
+                <p class="step-intro">不用公式。用一个两比特电路，理解女性法律援助中心如何进行公开、公平、可核验的名额抽签。</p>
+              </div>
+              <button class="lab-reset" id="lab-reset" type="button">重新开始 ↻</button>
+            </div>
+
+            <div class="use-case">
+              <span class="use-case-icon" aria-hidden="true">⚖</span>
+              <p><b>平等获得援助</b><strong>专业人员完成紧急程度评估后，两份匿名申请同等优先，但当天只剩一个加急法律咨询名额。中心按公开规则公平抽签；申请人看到的公示结果，必须与监督员保存的审计记录完全一致。</strong><small>这是用于解释电路的教学类比，并不表示法律援助抽签需要量子计算机。抽签只适用于需求与优先级确实相同的情况。</small></p>
+            </div>
+
+            <div class="circuit-lab" id="circuit-lab" data-stage="0">
+              <div class="circuit-canvas" aria-label="两量子比特 Bell 电路互动图">
+                <div class="qubit-label"><b>q0<small>公示结果</small></b><span class="bit-state" data-bit="0">0</span></div>
+                <div class="wire wire-zero"><i></i></div>
+                <button class="gate gate-h" type="button" data-lab-action="h" aria-describedby="lab-narration"><b>H</b><span>公平随机</span></button>
+                <div class="wire wire-zero-after"><i></i></div>
+                <button class="cx-gate" type="button" data-lab-action="cx" aria-label="应用 CX 门，关联公示结果与审计记录" aria-describedby="lab-narration" disabled>
+                  <b class="cx-control">●</b><i aria-hidden="true"></i><strong class="cx-target">⊕</strong>
+                  <span>CX 门</span><small>点击关联</small>
+                </button>
+                <div class="wire wire-zero-end"><i></i></div>
+                <button class="measure-button measure-zero" type="button" data-lab-action="measure" disabled><span>⌁</span><b>测量</b></button>
+
+                <div class="qubit-label label-one"><b>q1<small>审计记录</small></b><span class="bit-state" data-bit="1">0</span></div>
+                <div class="wire wire-one"><i></i></div>
+                <button class="idle-state" type="button" data-lab-action="why-q1" aria-describedby="lab-narration"><b>等待</b><span>为何没门？</span></button>
+                <div class="wire wire-one-after"><i></i></div>
+                <div class="wire wire-one-end"><i></i></div>
+                <button class="measure-button measure-one" type="button" data-lab-action="measure" aria-label="测量两个量子比特" disabled><span>⌁</span><b>测量</b></button>
+              </div>
+
+              <div class="lab-explanation">
+                <span class="lab-progress"><i></i><i></i><i></i></span>
+                <div class="lab-next-action"><b>下一步</b><span id="lab-action-text">① 点击左侧高亮的 H 门</span></div>
+                <span class="explanation-kicker" id="lab-kicker">先点击 H 门</span>
+                <h3 id="lab-title">先让两份同等优先的申请机会相等</h3>
+                <p id="lab-narration" aria-live="polite">q0 代表面向申请人的公示结果。H 门让“匿名申请 A 获得名额”和“匿名申请 B 获得名额”成为概率相同的两种可能。</p>
+                <div class="analogy"><b>平权类比</b><span id="lab-analogy">在需求确实相同、资源又有限时，公开且不偏向身份的规则，比由某个人凭印象决定更公平。</span></div>
+              </div>
+            </div>
+
+            <div class="measurement-results" id="measurement-results" hidden>
+              <div class="result-copy"><span>运行 100 次后的结果</span><strong id="result-summary">每次公示结果都与审计记录一致</strong><p>只出现 <code>00</code> 和 <code>11</code>；谁获得名额是随机的，但公开结果始终留下相同、可核验的记录。</p></div>
+              <div class="mini-histogram" aria-label="测量结果柱状图">
+                <div><span><b>00</b><small>匿名申请 A</small></span><i><em id="bar-00"></em></i><strong id="value-00">50%</strong></div>
+                <div><span><b>11</b><small>匿名申请 B</small></span><i><em id="bar-11"></em></i><strong id="value-11">50%</strong></div>
+                <div class="impossible"><span><b>01 / 10</b><small>公示与审计冲突</small></span><i><em></em></i><strong>0%</strong></div>
+              </div>
+            </div>
+
+          </div>
+          <div class="ready-footer">
+            <span id="ready-hint">完成三步互动后，就可以进入 LoomQ 工作台</span>
+            <button class="primary-action ready-action" id="finish-onboarding" type="button" disabled>进入工作台 <span>↗</span></button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </dialog>
+
+  <script type="module" src="/js/main.js"></script>
 </body>
 </html>

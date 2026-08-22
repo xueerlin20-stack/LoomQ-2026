@@ -29,6 +29,8 @@ class MockLLM:
 
     def understand(self, prompt):
         self.understand_calls.append(prompt)
+        if isinstance(self.intent, Exception):
+            raise self.intent
         return self.intent
 
     def repair_qasm(self, **arguments):
@@ -159,6 +161,36 @@ class L2AgentFrameworkTests(unittest.TestCase):
             agent.respond("做一个尚未支持的任务")
 
         self.assertEqual(len(llm.understand_calls), 1)
+
+    def test_ambiguous_request_returns_an_honest_clarification(self):
+        intent = AgentIntent(
+            task_type="clarify",
+            user_goal="无法可靠识别用户目标",
+            explanation="我不确定你希望设计什么电路，请补充输入和目标状态。",
+        )
+        agent, _llm, validator, selector = build_agent(intent)
+
+        result = agent.execute("帮我弄一下那个东西")
+
+        self.assertFalse(result.ok)
+        self.assertEqual(result.task_type, "clarify")
+        self.assertIn("不确定", result.message)
+        self.assertEqual(validator.calls, [])
+        self.assertEqual(selector.calls, [])
+
+    def test_unreadable_model_response_does_not_guess_an_answer(self):
+        agent, _llm, validator, selector = build_agent(
+            RuntimeError("LoomQ LLM returned invalid JSON")
+        )
+
+        result = agent.execute("请处理这个问题")
+
+        self.assertFalse(result.ok)
+        self.assertEqual(result.task_type, "clarify")
+        self.assertIn("不会猜测或编造", result.message)
+        self.assertIsNone(result.qasm)
+        self.assertEqual(validator.calls, [])
+        self.assertEqual(selector.calls, [])
 
 
 if __name__ == "__main__":

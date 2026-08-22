@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Dict, Iterable, Optional
 
 from .handlers import (
+    ClarifyHandler,
     GenerateQasmHandler,
     RecommendBackendHandler,
     RepairQasmHandler,
@@ -36,5 +37,6 @@ def default_registry() -> HandlerRegistry:
             GenerateQasmHandler(),
             RepairQasmHandler(),
             RecommendBackendHandler(),
+            ClarifyHandler(),
         ]
     )
