@@ -201,10 +201,13 @@ def agent_chat(prompt: str) -> str:
 
 
 def compile_hybrid(hybrid_qasm_str: str) -> Tuple[List[str], str]:
-    """Optional L3 entry point. Return quantum operations and RISC-V assembly."""
-    raise NotImplementedError(
-        "L3 is optional; implement compile_hybrid(hybrid_qasm_str) to enter"
-    )
+    """Compile Hybrid-QASM into quantum operations and RISC-V assembly."""
+    try:
+        from .L3 import compile_hybrid as compile_l3_hybrid
+    except ImportError:
+        from L3 import compile_hybrid as compile_l3_hybrid
+
+    return compile_l3_hybrid(hybrid_qasm_str)
 
 
 if __name__ == "__main__":
