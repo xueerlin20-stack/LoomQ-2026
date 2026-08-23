@@ -21,6 +21,21 @@ class RealBackendSelectorTests(unittest.TestCase):
             },
         )
 
+    def test_twelve_qubits_free_without_queue_has_three_valid_local_options(self):
+        selection = self.selector.select(
+            {"min_qubits": 12, "queue": "none", "cost": "free"}
+        )
+
+        self.assertEqual(selection.selected_id, "spinq_taurus_simulator")
+        self.assertEqual(
+            set([selection.selected_id] + selection.alternatives),
+            {
+                "spinq_taurus_simulator",
+                "originq_local_simulator",
+                "braket_local_simulator",
+            },
+        )
+
     def test_twenty_six_qubits_free_without_queue_selects_originq_local(self):
         selection = self.selector.select(
             {"min_qubits": 26, "queue": "none", "cost": "free"}

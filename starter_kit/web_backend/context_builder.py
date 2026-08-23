@@ -66,6 +66,33 @@ class ConversationContextBuilder:
         if conversation.active_artifact is None and not conversation.turns:
             return self._append_learning(prompt, learning_instruction)
 
+        # Backend recommendations and other non-circuit requests still need
+        # bounded history so phrases such as "what about 30 qubits?" can inherit
+        # the earlier cost and queue constraints. Do not attach the circuit-only
+        # NEW_CIRCUIT instruction here; let the core agent classify the task.
+        if conversation.active_artifact is None:
+            parts = [
+                "[LoomQ 多轮会话上下文]",
+                "最近对话：",
+            ]
+            for turn in conversation.turns[-3:]:
+                parts.append("用户：%s" % turn.user_text)
+                parts.append("助手：%s" % turn.assistant_text)
+            parts.extend(
+                [
+                    "[本轮用户请求]",
+                    prompt,
+                    (
+                        "请结合最近对话解析本轮的指代和条件变更，并重新判断任务类型。"
+                        "如果是在追问后端，继承未被本轮修改的后端约束；不要因为存在历史"
+                        "对话就假定用户要生成电路。"
+                    ),
+                ]
+            )
+            if learning_instruction:
+                parts.append("[讲解偏好：%s]" % learning_instruction)
+            return "\n\n".join(parts)
+
         parts = [
             "[LoomQ 多轮会话上下文]",
             "本轮动作：%s" % action,
@@ -105,8 +132,8 @@ class ConversationContextBuilder:
             )
         if action == EXPLAIN_CURRENT:
             return (
-                "请直接回答用户对当前电路的疑问；保持当前 QASM 不变，并在 explanation "
-                "中给出易懂、具体的解释。"
+                "请直接回答用户对当前电路的疑问，返回 task_type=explain_current，"
+                "保持所有 QASM 字段为空，并在 explanation 中给出易懂、具体的解释。"
             )
         if action == RUN_CURRENT:
             return (

@@ -6,6 +6,7 @@ from typing import Dict, Iterable, Optional
 
 from .handlers import (
     ClarifyHandler,
+    ExplainCurrentHandler,
     GenerateQasmHandler,
     RecommendBackendHandler,
     RepairQasmHandler,
@@ -37,6 +38,7 @@ def default_registry() -> HandlerRegistry:
             GenerateQasmHandler(),
             RepairQasmHandler(),
             RecommendBackendHandler(),
+            ExplainCurrentHandler(),
             ClarifyHandler(),
         ]
     )

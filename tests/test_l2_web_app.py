@@ -8,6 +8,7 @@ from starter_kit.web_app import WEB_ROOT, WebApplication
 from starter_kit.web_backend.backend_presentation import BackendPresenter
 from starter_kit.web_backend.chat import ChatService
 from starter_kit.web_backend.conversations import ConversationStore
+from starter_kit.web_backend.context_builder import ConversationContextBuilder
 
 
 class FakeAgent:
@@ -76,6 +77,27 @@ class WebApplicationTests(unittest.TestCase):
         self.assertEqual(response["backend"]["cost"], "Free")
         self.assertEqual(response["backend"]["max_qubits"], 30)
 
+    def test_non_circuit_history_is_kept_without_reframing_as_a_circuit_request(self):
+        store = ConversationStore()
+        conversation = store.get_or_create(None)
+        store.record(
+            conversation,
+            user_text="我要运行 123 比特电路，必须免费并且不能排队",
+            assistant_text="没有满足全部条件的运行平台。",
+            action="new_circuit",
+        )
+
+        prompt = ConversationContextBuilder().build(
+            prompt="那如果是运行30比特呢",
+            conversation=conversation,
+            action="new_circuit",
+        )
+
+        self.assertIn("123 比特电路，必须免费并且不能排队", prompt)
+        self.assertIn("那如果是运行30比特呢", prompt)
+        self.assertIn("继承未被本轮修改的后端约束", prompt)
+        self.assertNotIn("新的电路设计请求", prompt)
+
     def test_backend_facts_are_localized_for_plain_chinese_display(self):
         backend = BackendPresenter().describe("originq_local_simulator", "zh")
 
@@ -126,11 +148,9 @@ class WebApplicationTests(unittest.TestCase):
         )
         second = AgentResult(
             ok=True,
-            task_type="generate_qasm",
+            task_type="explain_current",
             response_language="zh",
-            qasm=first.qasm,
             explanation="H 门先让第一个量子比特进入两种可能性的叠加。",
-            validation={"status": "verified"},
         )
         agent = SequenceAgent([first, second])
         app = WebApplication(chat=ChatService(agent_factory=lambda: agent))
@@ -146,6 +166,8 @@ class WebApplicationTests(unittest.TestCase):
         )
 
         self.assertEqual(explained["conversation_action"], "explain_current")
+        self.assertTrue(explained["ok"])
+        self.assertEqual(explained["task_type"], "explain_current")
         self.assertIsNone(explained["qasm"])
         self.assertEqual(explained["active_artifact"]["version"], 1)
         self.assertIn("当前电路 QASM", agent.prompts[1])
@@ -328,6 +350,8 @@ class WebAssetsTests(unittest.TestCase):
         self.assertIn('id="open-config"', index)
         self.assertIn('id="composer"', workspace)
         self.assertIn('id="conversation-context"', workspace)
+        self.assertIn('id="clear-conversation"', workspace)
+        self.assertIn("清空对话 · 重新开始", workspace)
         self.assertIn('href="/"', workspace)
         self.assertIn("返回主界面", workspace)
         self.assertIn('id="onboarding"', index)
@@ -336,10 +360,11 @@ class WebAssetsTests(unittest.TestCase):
         self.assertIn('type="module" src="/js/main.js"', index)
         self.assertIn('type="module" src="/js/workspace.js"', workspace)
         self.assertIn("你对量子计算熟悉吗", index)
-        self.assertIn("基础概念科普", index)
-        self.assertIn("示例电路互动", index)
-        self.assertIn('id="module-concept-basics"', index)
-        self.assertIn('id="module-example-circuit"', index)
+        self.assertIn("默认开启基础概念与示例电路", index)
+        self.assertIn("默认跳过基础概念，直接看示例电路", index)
+        self.assertNotIn('id="module-concept-basics"', index)
+        self.assertNotIn('id="module-example-circuit"', index)
+        self.assertNotIn('class="learning-modules"', index)
         self.assertIn("默认跳过基础概念，直接看示例电路", index)
         self.assertIn("先认识电路里的四样东西", index)
         self.assertIn("量子比特", index)
@@ -376,6 +401,8 @@ class WebAssetsTests(unittest.TestCase):
         self.assertIn("/api/config", javascript)
         self.assertIn("/api/conversation/reset", javascript)
         self.assertIn("loomq.quantumProfile", javascript)
+        self.assertIn("PROFILE_MODULES", javascript)
+        self.assertIn("modulesForProfile(profile)", javascript)
         self.assertIn("class QuantumLab", javascript)
         self.assertIn("class ConceptBasics", javascript)
         self.assertIn("animateGate(action)", javascript)
@@ -385,8 +412,11 @@ class WebAssetsTests(unittest.TestCase):
         self.assertIn("explainWaitingQubit", javascript)
         self.assertIn("nextActionText", javascript)
         self.assertIn("validation.counts", javascript)
+        self.assertIn("没有找到满足全部条件的运行平台", javascript)
+        self.assertIn("data.task_type === 'recommend_backend'", javascript)
         self.assertIn("class ConversationSession", javascript)
         self.assertIn("conversation_id", javascript)
+        self.assertNotIn("setItem(STORAGE_KEY", javascript)
         self.assertIn("@media (max-width: 760px)", css)
         self.assertNotIn("LOOMQ_LLM_API_KEY", index + javascript)
         self.assertGreaterEqual(len(javascript_files), 8)

@@ -1,11 +1,11 @@
 // Browser-side pointer to server-owned conversation and active circuit state.
 
-const STORAGE_KEY = 'loomq.conversationSession';
-
 export class ConversationSession {
   constructor(storage = window.sessionStorage) {
-    this.storage = storage;
-    this.state = this.load();
+    // Conversation pointers are intentionally memory-only. Remove data written
+    // by older versions so reopening the page always starts a fresh session.
+    storage.removeItem('loomq.conversationSession');
+    this.state = { conversationId: null, artifact: null };
   }
 
   requestContext() {
@@ -23,31 +23,10 @@ export class ConversationSession {
       conversationId: response.conversation_id || this.state.conversationId || null,
       artifact: response.active_artifact || null,
     };
-    this.persist();
     return this.state;
   }
 
   clear() {
     this.state = { conversationId: null, artifact: null };
-    this.storage.removeItem(STORAGE_KEY);
-  }
-
-  load() {
-    try {
-      const stored = JSON.parse(this.storage.getItem(STORAGE_KEY));
-      if (stored && typeof stored === 'object') {
-        return {
-          conversationId: typeof stored.conversationId === 'string' ? stored.conversationId : null,
-          artifact: stored.artifact?.id ? stored.artifact : null,
-        };
-      }
-    } catch (_error) {
-      this.storage.removeItem(STORAGE_KEY);
-    }
-    return { conversationId: null, artifact: null };
-  }
-
-  persist() {
-    this.storage.setItem(STORAGE_KEY, JSON.stringify(this.state));
   }
 }

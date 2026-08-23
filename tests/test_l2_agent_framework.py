@@ -84,6 +84,22 @@ def build_agent(intent, repaired_qasm=VALID_QASM):
 
 
 class L2AgentFrameworkTests(unittest.TestCase):
+    def test_explanation_is_a_successful_agent_result(self):
+        intent = AgentIntent(
+            task_type="explain_current",
+            user_goal="解释 Bell 测量结果",
+            explanation="00 和 11 各约一半来自 Bell 态的关联测量。",
+        )
+        agent, _llm, validator, selector = build_agent(intent)
+
+        result = agent.execute("为什么结果是 1:1？")
+
+        self.assertTrue(result.ok)
+        self.assertEqual(result.task_type, "explain_current")
+        self.assertIn("Bell", result.explanation)
+        self.assertEqual(validator.calls, [])
+        self.assertEqual(selector.calls, [])
+
     def test_generate_flow_uses_llm_dispatches_validates_and_renders(self):
         intent = AgentIntent(
             task_type="generate_qasm",

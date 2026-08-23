@@ -24,8 +24,6 @@ export class OnboardingController {
       finish: document.querySelector('#finish-onboarding'),
       saveProfile: document.querySelector('#save-profile'),
       continueBasics: document.querySelector('#continue-basics'),
-      conceptBasics: document.querySelector('#module-concept-basics'),
-      exampleCircuit: document.querySelector('#module-example-circuit'),
       primer: document.querySelector('#concept-primer'),
       hint: document.querySelector('#ready-hint'),
     };
@@ -125,42 +123,30 @@ export class OnboardingController {
     document.querySelectorAll('[data-profile]').forEach((option) => {
       option.classList.toggle('is-selected', option === button);
     });
-    const defaults = {
-      new: { conceptBasics: true, exampleCircuit: true },
-      some: { conceptBasics: false, exampleCircuit: true },
-      expert: { conceptBasics: false, exampleCircuit: false },
-    }[this.selectedProfile];
-    this.elements.conceptBasics.checked = defaults.conceptBasics;
-    this.elements.exampleCircuit.checked = defaults.exampleCircuit;
     this.elements.saveProfile.disabled = false;
   }
 
   restoreProfileSelection() {
-    const saved = this.preferences.getLearningPreferences();
-    if (saved.profile) this.selectedProfile = saved.profile;
+    const { profile } = this.preferences.getLearningPreferences();
+    if (profile) this.selectedProfile = profile;
     if (!this.selectedProfile) return;
     document.querySelectorAll('[data-profile]').forEach((option) => {
       option.classList.toggle('is-selected', option.dataset.profile === this.selectedProfile);
     });
-    this.elements.conceptBasics.checked = saved.conceptBasics;
-    this.elements.exampleCircuit.checked = saved.exampleCircuit;
     this.elements.saveProfile.disabled = false;
   }
 
   saveProfile() {
     if (!this.selectedProfile) return;
-    const modules = {
-      conceptBasics: this.elements.conceptBasics.checked,
-      exampleCircuit: this.elements.exampleCircuit.checked,
-    };
-    this.preferences.saveLearningPreferences(this.selectedProfile, modules);
+    const modules = this.preferences.saveLearningPreferences(this.selectedProfile);
     this.pendingExampleCircuit = modules.exampleCircuit;
     if (modules.conceptBasics) {
       this.conceptBasics.reset();
       this.showStep('basics');
       return;
     }
-    this.prepareReadyStep(modules.exampleCircuit);
+    if (modules.exampleCircuit) this.prepareReadyStep(true);
+    else this.finish();
   }
 
   continueFromBasics() {

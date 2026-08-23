@@ -3,9 +3,13 @@
 const KEYS = Object.freeze({
   profile: 'loomq.quantumProfile',
   explainConcepts: 'loomq.explainConcepts',
-  conceptBasics: 'loomq.conceptBasics',
-  exampleCircuit: 'loomq.exampleCircuit',
   onboardingComplete: 'loomq.onboardingComplete',
+});
+
+const PROFILE_MODULES = Object.freeze({
+  new: Object.freeze({ conceptBasics: true, exampleCircuit: true }),
+  some: Object.freeze({ conceptBasics: false, exampleCircuit: true }),
+  expert: Object.freeze({ conceptBasics: false, exampleCircuit: false }),
 });
 
 export class PreferenceStore {
@@ -15,29 +19,23 @@ export class PreferenceStore {
 
   getLearningPreferences() {
     const profile = this.get(KEYS.profile) || '';
-    const legacyExplain = this.get(KEYS.explainConcepts) === 'true';
-    const storedBasics = this.get(KEYS.conceptBasics);
-    const storedExample = this.get(KEYS.exampleCircuit);
-    const profileDefaults = {
-      new: { conceptBasics: true, exampleCircuit: true },
-      some: { conceptBasics: false, exampleCircuit: true },
-      expert: { conceptBasics: false, exampleCircuit: false },
-    }[profile] || { conceptBasics: legacyExplain, exampleCircuit: legacyExplain };
+    const modules = this.modulesForProfile(profile);
     return {
       profile,
-      explainConcepts: storedBasics === null ? profileDefaults.conceptBasics : storedBasics === 'true',
-      conceptBasics: storedBasics === null ? profileDefaults.conceptBasics : storedBasics === 'true',
-      exampleCircuit: storedExample === null ? profileDefaults.exampleCircuit : storedExample === 'true',
+      explainConcepts: modules.conceptBasics,
+      ...modules,
     };
   }
 
-  saveLearningPreferences(profile, modules) {
-    const conceptBasics = typeof modules === 'boolean' ? modules : modules.conceptBasics;
-    const exampleCircuit = typeof modules === 'boolean' ? modules : modules.exampleCircuit;
+  modulesForProfile(profile) {
+    return PROFILE_MODULES[profile] || { conceptBasics: false, exampleCircuit: false };
+  }
+
+  saveLearningPreferences(profile) {
+    const modules = this.modulesForProfile(profile);
     this.set(KEYS.profile, profile);
-    this.set(KEYS.explainConcepts, String(conceptBasics));
-    this.set(KEYS.conceptBasics, String(conceptBasics));
-    this.set(KEYS.exampleCircuit, String(exampleCircuit));
+    this.set(KEYS.explainConcepts, String(modules.conceptBasics));
+    return modules;
   }
 
   isOnboardingComplete() {

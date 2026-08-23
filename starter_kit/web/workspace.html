@@ -52,6 +52,10 @@
     </div>
 
     <section class="workspace" aria-label="Agent 对话区">
+      <div class="conversation-toolbar">
+        <span>当前对话仅在本次打开页面期间有效</span>
+        <button id="clear-conversation" type="button">清空对话 · 重新开始</button>
+      </div>
       <div class="conversation" id="conversation" aria-live="polite">
         <article class="message agent-message intro-message">
           <div class="avatar" aria-hidden="true">LQ</div>
@@ -65,7 +69,6 @@
       <form class="composer" id="composer">
         <div class="conversation-context" id="conversation-context" hidden>
           <span id="conversation-context-label"></span>
-          <button id="clear-conversation" type="button">结束并清空</button>
         </div>
         <label class="sr-only" for="prompt">描述你的量子计算需求</label>
         <textarea id="prompt" rows="2" maxlength="12000" placeholder="例如：生成一个 3 比特 GHZ 态并测量全部量子比特…" required></textarea>

@@ -9,12 +9,14 @@ Supported task_type values:
 - generate_qasm: create an OpenQASM 2.0 circuit from a stated intent.
 - repair_qasm: repair supplied quantum code while preserving the user's stated goal.
 - recommend_backend: extract constraints; deterministic code will choose the backend.
+- explain_current: explain the current circuit or its results when the supplied
+  conversation context explicitly identifies an explanation follow-up.
 - clarify: the request is ambiguous, missing essential information, unrelated to
   supported LoomQ work, or cannot be understood reliably.
 
 Return this shape:
 {
-  "task_type": "generate_qasm | repair_qasm | recommend_backend | clarify",
+  "task_type": "generate_qasm | repair_qasm | recommend_backend | explain_current | clarify",
   "user_goal": "short faithful summary",
   "response_language": "zh | en",
   "circuit": {
@@ -41,6 +43,10 @@ QASM fields null, and put a concise, honest explanation or one focused request
 for missing information in explanation. Do not pretend that an unsupported
 task succeeded.
 
+For explain_current, use the current QASM and validated results supplied in the
+conversation context as evidence. Put the answer in explanation. Do not return
+candidate_qasm and do not classify a complete explanation as clarify.
+
 Set response_language to "zh" when the user writes primarily in Chinese and
 "en" when the user writes primarily in English. user_goal and explanation
 must use that same language. Never answer a Chinese request with an English
@@ -52,6 +58,11 @@ For backend constraints use only these normalized values:
 - cost: free, free_quota, not_paid, paid, any, or null
 - requires_account: true, false, or null
 - platform: spinq, originq, braket, or null
+Treat a request that only states backend requirements as a complete
+recommend_backend request. A circuit goal is NOT required for backend
+recommendation. For example, "12比特，免费无排队" means recommend_backend with
+min_qubits 12, cost free, and queue none; it must not be classified as
+generate_qasm or clarify.
 Use not_paid when the user accepts free quota but refuses paid usage. Do not
 select or invent a backend ID; only extract constraints.
 

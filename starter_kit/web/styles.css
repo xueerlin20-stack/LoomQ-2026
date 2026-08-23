@@ -169,11 +169,13 @@ pre { margin: 0; padding: 19px; overflow-x: auto; color: #e6e2ff; font: 13px/1.7
 .follow-up-suggestions button:hover, .follow-up-suggestions button:focus-visible { border-color: var(--lime); color: var(--ink); outline: none; }
 
 .composer { border-top: 1px solid var(--line); padding: 18px; background: rgba(10,11,13,.65); }
+.conversation-toolbar { min-height: 42px; padding: 10px 18px; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 16px; color: #77746e; font-size: 10px; }
+.conversation-toolbar button { border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--muted); padding: 7px 11px; cursor: pointer; font-size: 10px; }
+.conversation-toolbar button:hover, .conversation-toolbar button:focus-visible { border-color: rgba(200,255,102,.45); color: var(--ink); outline: none; }
+.conversation-toolbar button:disabled { opacity: .45; cursor: wait; }
 .conversation-context { margin: -2px 0 10px; padding: 9px 11px; border: 1px solid rgba(200,255,102,.2); border-radius: 11px; background: rgba(200,255,102,.045); color: var(--lime); font-size: 11px; display: flex; align-items: center; justify-content: space-between; gap: 14px; }
 .conversation-context[hidden] { display: none; }
 .conversation-context span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.conversation-context button { flex: 0 0 auto; border: 0; background: transparent; color: var(--muted); cursor: pointer; font-size: 10px; }
-.conversation-context button:hover { color: var(--ink); }
 textarea { width: 100%; resize: none; border: 0; outline: 0; color: var(--ink); background: transparent; padding: 6px 7px 14px; line-height: 1.6; min-height: 60px; }
 textarea::placeholder { color: #73716d; }
 .composer-footer { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
@@ -245,17 +247,6 @@ kbd { font: inherit; border: 1px solid var(--line); border-bottom-width: 2px; bo
 .profile-icon { color: var(--lime); font-size: 19px; margin-bottom: 23px; }
 .profile-card strong { font-size: 13px; margin-bottom: 7px; }
 .profile-card small { color: var(--muted); font-size: 10px; line-height: 1.5; }
-.learning-modules { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
-.explain-toggle { margin-top: 15px; padding: 15px 17px; border: 1px solid var(--line); border-radius: 14px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
-.learning-modules .explain-toggle { margin-top: 0; }
-.explain-toggle span { display: grid; gap: 5px; }
-.explain-toggle strong { font-size: 12px; }
-.explain-toggle small { color: var(--muted); font-size: 10px; }
-.explain-toggle input { position: absolute; opacity: 0; }
-.explain-toggle i { flex: 0 0 auto; width: 39px; height: 22px; border-radius: 999px; background: #46464b; position: relative; transition: .2s; }
-.explain-toggle i::after { content: ""; position: absolute; width: 16px; height: 16px; border-radius: 50%; background: white; top: 3px; left: 3px; transition: .2s; }
-.explain-toggle input:checked + i { background: var(--lime); }
-.explain-toggle input:checked + i::after { transform: translateX(17px); background: #171a12; }
 
 .concept-explorer { display: grid; grid-template-columns: 190px minmax(0, 1fr); gap: 12px; min-height: 420px; }
 .concept-sidebar { padding: 13px; border: 1px solid var(--line); border-radius: 16px; background: rgba(255,255,255,.02); display: flex; flex-direction: column; gap: 7px; }
@@ -487,7 +478,7 @@ button.measure-button:enabled:hover { border-color: var(--lime); }
   .step-rail li::after { content: "步骤"; font-size: 9px; }
   .onboarding-content { padding: 34px 22px 26px; }
   .onboarding h2 { font-size: 35px; }
-  #config-fields, .profile-options, .learning-modules { grid-template-columns: 1fr; }
+  #config-fields, .profile-options { grid-template-columns: 1fr; }
   .concept-explorer { grid-template-columns: 1fr; min-height: 0; }
   .concept-sidebar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; padding: 8px; }
   .concept-sidebar > span { grid-column: 1 / -1; padding: 3px 4px 7px; }

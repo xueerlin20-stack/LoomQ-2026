@@ -27,22 +27,21 @@
     <section class="hero" id="welcome">
       <div class="eyebrow"><span>无需 QASM 知识</span><span>无需平台黑话</span></div>
       <h1>把你的想法，<br><em>变成一次量子实验。</em></h1>
-      <p>告诉 LoomQ 你想做什么。它会生成或修复电路，在本地 SpinQit 模拟器中真实运行，并把结果讲明白。</p>
 
       <div class="portal-grid" aria-label="LoomQ 功能入口">
-        <button class="portal-card portal-guide" id="open-guide" type="button">
-          <span class="portal-index">01 · FIRST FLIGHT</span>
-          <span class="portal-symbol" aria-hidden="true">Q</span>
-          <strong>新手引导</strong>
-          <small>选择讲解深度，亲手运行第一个两比特电路。</small>
-          <span class="portal-action">开始引导 →</span>
-        </button>
         <button class="portal-card" id="open-config" type="button">
-          <span class="portal-index">02 · SETUP</span>
+          <span class="portal-index">01 · SETUP</span>
           <span class="portal-symbol" aria-hidden="true">⌁</span>
           <strong>运行配置</strong>
           <small>检查模型地址、凭证、模型名称和请求超时。</small>
           <span class="portal-action">检查配置 →</span>
+        </button>
+        <button class="portal-card portal-guide" id="open-guide" type="button">
+          <span class="portal-index">02 · FIRST FLIGHT</span>
+          <span class="portal-symbol" aria-hidden="true">Q</span>
+          <strong>新手引导</strong>
+          <small>选择讲解深度，亲手运行第一个两比特电路。</small>
+          <span class="portal-action">开始引导 →</span>
         </button>
         <a class="portal-card portal-workspace" href="/workspace.html">
           <span class="portal-index">03 · WORKSPACE</span>
@@ -89,7 +88,6 @@
         <div class="onboarding-step" data-step="profile" hidden>
           <span class="step-label">步骤 2 / 4 · 个性化</span>
           <h2>你对量子计算熟悉吗？</h2>
-          <p class="step-intro">没有标准答案。这个选择只会改变 LoomQ 的讲解方式，你之后可以随时修改。</p>
           <div class="profile-options" role="radiogroup" aria-label="量子知识背景">
             <button class="profile-card" type="button" data-profile="new">
               <span class="profile-icon">○</span><strong>第一次接触</strong>
@@ -104,18 +102,6 @@
               <small>默认跳过两个模块，直接进入工作台</small>
             </button>
           </div>
-          <div class="learning-modules" aria-label="选择新手学习模块">
-            <label class="explain-toggle">
-              <span><strong>基础概念科普</strong><small>认识量子比特、量子门、电路和测量</small></span>
-              <input id="module-concept-basics" type="checkbox" checked>
-              <i aria-hidden="true"></i>
-            </label>
-            <label class="explain-toggle">
-              <span><strong>示例电路互动</strong><small>亲手运行女性法律援助场景的 Bell 电路</small></span>
-              <input id="module-example-circuit" type="checkbox" checked>
-              <i aria-hidden="true"></i>
-            </label>
-          </div>
           <div class="dialog-actions align-right">
             <button class="text-action" type="button" data-back="config">返回</button>
             <button class="primary-action" id="save-profile" type="button" disabled>继续 <span>→</span></button>
@@ -124,8 +110,6 @@
 
         <div class="onboarding-step" data-step="basics" hidden>
           <span class="step-label">步骤 3 / 4 · 基础概念</span>
-          <h2>先认识电路里的四样东西</h2>
-          <p class="step-intro">不需要背公式。先知道信息放在哪里、指令怎样改变它，以及我们最后如何读出答案。</p>
 
           <div class="concept-explorer" id="concept-basics" data-active-concept="qubit" data-qubit-state="zero">
             <aside class="concept-sidebar" aria-label="基础概念目录">
