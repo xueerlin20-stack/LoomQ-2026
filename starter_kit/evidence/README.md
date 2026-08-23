@@ -52,13 +52,16 @@ evidence/files/spinq-screenshot.png
 请填写：
 
 ```text
-启动界面或 CLI 的命令：python3 starter_kit/web_app.py
+启动web界面的命令：python3 starter_kit/web_app.py
 测试入口或页面地址：http://127.0.0.1:8765
+
 适合现场体验的 3 个用户任务：
 1. 生成一个 3 比特 GHZ 态并进行全测量
 2. 我想制备贝尔态，请修复这段代码：H q[0]; CX q[0] q[1]
 3. 我要运行一个 26 比特电路，必须免费并且不能排队
-截图或演示视频：无；工作人员可按上述命令直接运行最终代码
+
+截图文件夹:
+starter_kit/evidence/files/L2-web-chatbot
 ```
 
 工作人员会在组委会统一模型环境中运行最终代码，测试新手是否看得懂、出错后能否得到有效帮助、结果是否清楚，以及多轮回答是否一致。选手自己的对话截图只用于说明产品流程，不直接证明得分。
