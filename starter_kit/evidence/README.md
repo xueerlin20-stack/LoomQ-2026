@@ -11,7 +11,7 @@
 - [ ] L1 真机
 - [x] L2 交互体验
 - [ ] 工程与产品化
-- [ ] 自定义量子 RISC-V Bonus
+- [x] 自定义量子 RISC-V Bonus
 - [ ] 新手引导与视觉叙事 Bonus
 
 ## L1 真机
@@ -19,13 +19,22 @@
 每个有效真机平台计 5 分，最多两个平台。模拟器不计真机分。每个平台复制并填写一次下面的信息：
 
 ```text
-平台名称：[填写]
-平台 job ID：[填写]
-运行时间：[填写，带时区]
-shots：[填写]
-实际执行的 QASM：[填写仓库内路径]
-平台返回的原始结果：[填写仓库内路径]
-任务页截图：[选填，填写仓库内路径]
+平台名称：[originq_real]
+平台 job ID：[9AF78C69756E262144E19CC897A4D328]
+运行时间：[2026-08-09T13:06:32.512572+00:00]
+shots：[1000]
+实际执行的 QASM：[starter_kit/circuits/bell.qasm]
+平台返回的原始结果：[starter_kit/evidence/files/originq-result.json]
+任务页截图：[starter_kit/evidence/files/真机结果/originq_1.jpeg][starter_kit/evidence/files/真机结果/originq_2.jpeg][starter_kit/evidence/files/真机结果/originq_3.jpeg]
+```
+```text
+平台名称：[spinq_real]
+平台 job ID：[G-260809-0019]
+运行时间：[2026-08-09T10:36:14.465306+00:00]
+shots：[100]
+实际执行的 QASM：[starter_kit/circuits/bell.qasm]
+平台返回的原始结果：[starter_kit/evidence/files/spinq-result.json]
+任务页截图：[starter_kit/evidence/files/真机结果/spinq_1.jpeg][starter_kit/evidence/files/真机结果/spinq_2.jpeg]
 ```
 
 建议把文件放进 `evidence/files/`，比如：
@@ -72,9 +81,9 @@ evidence/files/spinq-screenshot.png
 以下三项必须齐全且测试通过，才获得 8 分：
 
 ```text
-指令编码规格：[填写文档路径]
-模拟器扩展实现：[填写代码路径]
-端到端测试命令：[填写命令或文档路径]
+指令编码规格：`starter_kit/bonus_quantum_riscv/SPEC.md`
+模拟器扩展实现：`starter_kit/bonus_quantum_riscv/emulator.py`（编码器位于同目录 `encoding.py` 和 `compiler.py`）
+端到端测试命令：`python -B -m unittest discover -s starter_kit/bonus_quantum_riscv/tests -v`
 ```
 
 ## 新手引导与视觉叙事 Bonus
