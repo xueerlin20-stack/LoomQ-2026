@@ -56,18 +56,6 @@
 
   <dialog class="onboarding" id="onboarding" aria-labelledby="onboarding-title">
     <div class="onboarding-shell">
-      <aside class="onboarding-story" aria-hidden="true">
-        <span class="story-kicker">FIRST FLIGHT</span>
-        <div class="orbit-visual"><i></i><i></i><i></i><b>Q</b></div>
-        <p>每次量子实验都从一个普通问题开始。我们先把运行环境接好，再从最基础的概念走进第一个电路。</p>
-        <ol class="step-rail">
-          <li class="is-current" data-rail-step="config"><span>1</span>连接模型</li>
-          <li data-rail-step="profile"><span>2</span>选择讲解方式</li>
-          <li data-rail-step="basics"><span>3</span>认识基本概念</li>
-          <li data-rail-step="ready"><span>4</span>开始第一次实验</li>
-        </ol>
-      </aside>
-
       <section class="onboarding-content">
         <button class="dialog-close" id="close-onboarding" type="button" aria-label="关闭引导">×</button>
 
@@ -109,7 +97,10 @@
         </div>
 
         <div class="onboarding-step" data-step="basics" hidden>
-          <span class="step-label">步骤 3 / 4 · 基础概念</span>
+          <header class="basics-heading">
+            <span class="step-label">步骤 3 / 4</span>
+            <h2>基础概念</h2>
+          </header>
 
           <div class="concept-explorer" id="concept-basics" data-active-concept="qubit" data-qubit-state="zero">
             <aside class="concept-sidebar" aria-label="基础概念目录">
@@ -124,68 +115,82 @@
               <header><span id="concept-position">概念 1 / 4</span></header>
 
               <article class="concept-panel" data-concept-panel="qubit">
-                <h3>量子比特，像一枚正在旋转的硬币</h3>
+                <h3>量子比特，是保存量子信息的基本单位</h3>
                 <div class="qubit-story-copy">
                   <section>
-                    <span>普通比特</span>
-                    <h4>像房间里的灯开关</h4>
-                    <p>“啪”的一声：关着是 <code>0</code>，打开是 <code>1</code>。查看之前，答案就已经确定。</p>
+                    <span><h4>信息载体</h4></span>
+                    <p>普通比特的格子保存 <code>0</code> 或 <code>1</code>；量子比特的格子保存量子状态。</p>
                   </section>
                   <section class="is-quantum">
-                    <span>量子比特</span>
-                    <h4>像一枚仍在旋转的硬币</h4>
-                    <p>它像一个<strong>自带概率的比特</strong>：硬币还没停下时，正面和反面都有可能；测量前，<code>0</code> 和 <code>1</code> 也都有机会出现。</p>
+                    <span>两个基础状态</span>
+                    <h4><code>|0⟩</code> 与 <code>|1⟩</code></h4>
+                    <p><code>| ⟩</code> 表示“这是一个状态”。<code>|0⟩</code> 读作“零态”，<code>|1⟩</code> 读作“一态”；中间的 <code>0</code>、<code>1</code> 是状态名称</p>
                   </section>
                   <section>
-                    <span>测量</span>
-                    <h4>像在某一刻按下快门</h4>
-                    <p>照片最终只会留下一个结果。重复很多次，才会看出 <code>0</code> 和 <code>1</code> 各自出现的概率。</p>
+                    <span>直观比喻</span>
+                    <h4>像一枚正在旋转的硬币</h4>
+                    <p>看清之前，先同时保留正面和反面两种可能；测量就像让硬币停下，一次只会看到一面。这个比喻帮助理解“可能性”，量子比特并不是真的硬币。</p>
                   </section>
                 </div>
-                <p class="qubit-takeaway"><b>记住：</b>测量一次只得到一个答案；多做几次，才能看见概率。</p>
               </article>
 
               <article class="concept-panel" data-concept-panel="gate" hidden>
-                <h3>量子门，是作用在量子比特上的指令</h3>
-                <p>从同一个 |0⟩ 起点选择一种门。点击后，门会沿线路加载，再显示它造成的变化。</p>
-                <div class="gate-focus-demo">
-                  <div class="gate-circuit-demo" aria-label="量子门加载到电路线的动画">
-                    <div class="gate-wire">
-                      <span class="gate-wire-input">|0⟩</span>
-                      <span class="gate-track" aria-hidden="true"><i></i></span>
-                      <b id="basic-gate-chip" class="gate-chip" data-gate="ready">准备</b>
-                      <span class="gate-wire-output" id="basic-gate-state">|0⟩</span>
+                <h3>量子门，是改变量子比特状态的操作</h3>
+                <div class="gate-single-demo" id="basic-gate-demo" data-gate="empty">
+                  <div class="gate-picker" aria-label="选择一个量子门进行演示">
+                    <span>选择一个门</span>
+                    <button type="button" data-basic-gate-action="h"><b>H</b><small>制造两种可能</small></button>
+                    <button type="button" data-basic-gate-action="cx"><b>CX</b><small>关联两个量子比特</small></button>
+                    <button class="gate-clear" type="button" id="reset-basic-gates">清空</button>
+                  </div>
+
+                  <div class="single-gate-stage" aria-live="polite">
+                    <div class="gate-view gate-view-empty" data-gate-view="empty">
+                      <span>线路还是空的</span><strong>请从上方选择一个门</strong>
                     </div>
-                    <div class="gate-wire-labels"><span>输入</span><strong id="basic-gate-loading">尚未加载量子门</strong><span>状态</span></div>
+                    <div class="gate-view gate-view-h" data-gate-view="h" hidden aria-label="H 门演示：零态经过 H 门变成加态">
+                      <span class="single-state"><b>量子比特 q0</b><small>输入状态 |0⟩</small></span><i></i>
+                      <button class="single-gate-symbol" type="button" data-basic-gate-run="h" aria-label="点击 H 门，运行并测量一次"><b>H</b><small>点击运行</small></button>
+                      <i></i><em class="single-measure">⌁ 测量</em><span class="single-output" id="basic-h-output">等待</span>
+                    </div>
+                    <div class="gate-view gate-view-cx" data-gate-view="cx" hidden aria-label="CX 门演示：控制量子比特决定目标量子比特是否翻转">
+                      <span class="single-state state-zero"><b>量子比特 q0</b><small>输入 |1⟩ · 控制</small></span><i class="cx-wire wire-top"></i>
+                      <button class="single-cx" type="button" data-basic-gate-run="cx" aria-label="点击 CX 门，运行并测量一次"><b>●</b><i></i><strong>⊕</strong><small id="basic-cx-action">点击运行</small></button>
+                      <i class="cx-wire wire-top-after"></i><span class="single-output output-top" id="basic-cx-output-zero">等待</span>
+                      <span class="single-state state-one"><b>量子比特 q1</b><small>输入 |0⟩ · 目标</small></span><i class="cx-wire wire-bottom"></i><i class="cx-wire wire-bottom-after"></i><span class="single-output output-bottom" id="basic-cx-output-one">等待</span>
+                    </div>
                   </div>
-                  <div class="gate-demo-controls" aria-label="尝试量子门">
-                    <button type="button" data-basic-action="zero" aria-pressed="true">准备 |0⟩</button>
-                    <button type="button" data-basic-action="x" aria-pressed="false">加载 X 门</button>
-                    <button type="button" data-basic-action="h" aria-pressed="false">加载 H 门</button>
-                  </div>
-                  <p id="basic-gate-narration">从确定的 0 状态开始。</p>
+                  <p id="basic-gate-narration"><b>还没有加载门。</b>先选择 H 或 CX；演示区一次只显示一个门。</p>
                 </div>
               </article>
 
               <article class="concept-panel" data-concept-panel="circuit" hidden>
-                <h3>量子电路，是一次实验的执行顺序</h3>
-                <p>沿着线路从左向右读：先准备量子比特，再经过量子门，最后测量。</p>
+                <h3>量子电路，把操作排成一次实验</h3>
                 <div class="circuit-focus-flow" aria-label="量子电路从左到右的三个阶段">
-                  <span><b>①</b><strong>准备</strong><small>|0⟩</small></span><i>→</i>
-                  <span><b>②</b><strong>量子门</strong><small>H / X</small></span><i>→</i>
-                  <span><b>③</b><strong>测量</strong><small>0 或 1</small></span>
+                  <span><b>① 起点</b><strong>准备状态</strong><small>例如 |0⟩</small></span><i>→</i>
+                  <span><b>② 操作</b><strong>经过量子门</strong><small>例如 H、X</small></span><i>→</i>
+                  <span><b>③ 读出</b><strong>进行测量</strong><small>得到 0 或 1</small></span>
                 </div>
-                <div class="concept-one-line">电路图不是机器内部的照片，而是一份从左到右执行的实验说明。</div>
               </article>
 
               <article class="concept-panel" data-concept-panel="measurement" hidden>
-                <h3>测量一次，只会得到一个普通结果</h3>
-                <p>下面假设 H 门已经让 0 和 1 机会相等。多测几次，才能逐渐看见概率规律。</p>
-                <div class="measurement-focus-demo">
-                  <button type="button" data-basic-action="measure">测量一次 <span>⌁</span></button>
-                  <strong id="basic-measure-result">等待测量</strong>
-                  <p id="basic-measure-counts">已测量 0 次 · 0：0 次 · 1：0 次</p>
+                <h3>测量，把量子状态读成 0 或 1</h3>
+                <p>下面测量的是同一条 H 门电路。每次运行都会重新准备 <code>|0⟩</code>，经过 H 门，再读出一个 0 或 1。</p>
+                <div class="measurement-circuit" aria-label="零态经过 H 门后进行测量的单量子比特电路">
+                  <span><b>q0</b><small>|0⟩</small></span><i></i><strong>H</strong><i></i><em>⌁ 测量</em><output>0 或 1</output>
                 </div>
+                <div class="measurement-focus-demo">
+                  <button type="button" id="basic-measure-button" data-basic-action="measure">先测量一次 <span>⌁</span></button>
+                  <div>
+                    <strong id="basic-measure-result">还没有测量</strong>
+                    <p id="basic-measure-counts">先运行一次，看看单次测量会发生什么。</p>
+                  </div>
+                </div>
+                <div class="measurement-live-results" id="basic-measure-results" aria-label="实时测量结果">
+                  <div><span><b>0</b><small id="basic-zero-count">0 次</small></span><i><em id="basic-zero-bar"></em></i><strong id="basic-zero-percent">0%</strong></div>
+                  <div><span><b>1</b><small id="basic-one-count">0 次</small></span><i><em id="basic-one-bar"></em></i><strong id="basic-one-percent">0%</strong></div>
+                </div>
+                <div class="concept-one-line" id="basic-measure-explanation">一次测量只会得到一个答案；完成后，再用 100 次观察整体比例。</div>
               </article>
 
               <footer>
@@ -205,7 +210,7 @@
             <div class="lab-heading">
               <div>
                 <h2>亲手运行第一个量子电路</h2>
-                <p class="step-intro">不用公式。用一个两比特电路，理解女性法律援助中心如何进行公开、公平、可核验的名额抽签。</p>
+
               </div>
               <button class="lab-reset" id="lab-reset" type="button">重新开始 ↻</button>
             </div>
@@ -230,7 +235,7 @@
 
                 <div class="qubit-label label-one"><b>q1<small>审计记录</small></b><span class="bit-state" data-bit="1">0</span></div>
                 <div class="wire wire-one"><i></i></div>
-                <button class="idle-state" type="button" data-lab-action="why-q1" aria-describedby="lab-narration"><b>等待</b><span>为何没门？</span></button>
+                <div class="wire wire-one-through"><i></i></div>
                 <div class="wire wire-one-after"><i></i></div>
                 <div class="wire wire-one-end"><i></i></div>
                 <button class="measure-button measure-one" type="button" data-lab-action="measure" aria-label="测量两个量子比特" disabled><span>⌁</span><b>测量</b></button>

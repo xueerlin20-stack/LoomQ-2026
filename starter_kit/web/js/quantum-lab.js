@@ -9,9 +9,9 @@ const COPY = Object.freeze({
     action: '① 点击左侧高亮的 H 门',
   },
   1: {
-    kicker: 'q0 已公平随机 · 下一步点击 CX 门',
-    title: 'q1 没有 H 门，是有意的设计',
-    narration: 'q1 代表监督员保存的审计记录。它不能自己再抽一次，只能等待公示结果。现在点击电路中高亮的“CX 门”，把两条线关联起来。',
+    kicker: 'q0 已准备好 · 下一步点击 CX 门',
+    title: '让公示结果与审计记录保持一致',
+    narration: '现在点击电路中高亮的 CX 门，把 q0 的公示结果与 q1 的审计记录关联起来。',
     analogy: '如果公示屏与审计记录各自独立抽签，就可能写下不同答案，审计也失去意义。一次公平抽签，必须对应一份相同记录。',
     action: '② 点击两条线中间高亮的 CX 门',
   },
@@ -19,7 +19,7 @@ const COPY = Object.freeze({
     kicker: '纠缠已建立 · 点击测量',
     title: 'CX 把公示结果与审计记录关联起来',
     narration: 'q0 是控制端，q1 是目标端：q0 为 0 时 q1 保持 0；q0 为 1 时 q1 翻转为 1。现在可以测量 100 次。',
-    analogy: 'H 负责“选择时不偏向任何一份匿名申请”，CX 负责“选择后留下相同记录”。机会公平与过程可核验，是两件不同但都必要的事。',
+    analogy: 'H 负责“选择时不偏向任何一份匿名申请”，CX 负责“选择后留下相同记录”。',
     action: '③ 点击右侧任意一个高亮的“测量”',
   },
 });
@@ -43,7 +43,6 @@ export class QuantumLab {
     if (action === 'h' && this.stage === 0) this.setStage(1);
     if (action === 'cx' && this.stage === 1) this.setStage(2);
     if (action === 'measure' && this.stage === 2) this.measure();
-    if (action === 'why-q1') this.explainWaitingQubit();
   }
 
   reset() {
@@ -96,16 +95,6 @@ export class QuantumLab {
       if (Math.random() < 0.5) zeroCount += 1;
     }
     return zeroCount;
-  }
-
-  explainWaitingQubit() {
-    this.updateCopy({
-      kicker: '这不是漏画 · q1 正在等待',
-      title: '为什么 q1 旁边没有 H 门？',
-      narration: 'Bell 电路故意只让 q0 经过 H 门。q1 从 0 开始，稍后由 CX 根据 q0 的状态决定“保持 0”还是“翻转到 1”，这样两者才会关联。',
-      analogy: '公示端负责一次公开抽签，审计端不再重复抽签，只记录同一个结果。如果 q1 也独立随机，公示与审计反而可能互相矛盾。',
-      action: this.nextActionText(),
-    });
   }
 
   setGateAvailability(stage) {

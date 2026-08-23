@@ -62,9 +62,6 @@ export class OnboardingController {
     document.querySelectorAll('.onboarding-step').forEach((panel) => {
       panel.hidden = panel.dataset.step !== step;
     });
-    document.querySelectorAll('[data-rail-step]').forEach((item) => {
-      item.classList.toggle('is-current', item.dataset.railStep === step);
-    });
     if (step === 'profile') this.restoreProfileSelection();
   }
 

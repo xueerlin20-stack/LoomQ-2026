@@ -11,8 +11,10 @@ export class ConceptBasics {
   constructor(root) {
     this.root = root;
     this.activeIndex = 0;
-    this.gateState = 'zero';
-    this.lastGateAction = 'zero';
+    this.selectedGate = null;
+    this.gateRunResult = null;
+    this.cxHasRun = false;
+    this.measurementMode = 'single';
     this.measurements = { zero: 0, one: 0 };
   }
 
@@ -20,12 +22,15 @@ export class ConceptBasics {
     this.root.querySelectorAll('[data-concept-target]').forEach((button) => {
       button.addEventListener('click', () => this.selectConcept(button.dataset.conceptTarget));
     });
-    this.root.querySelectorAll('[data-basic-action]').forEach((button) => {
-      button.addEventListener('click', () => {
-        if (button.dataset.basicAction === 'measure') this.measureOnce();
-        else this.applyGate(button.dataset.basicAction);
-      });
+    this.root.querySelector('[data-basic-action="measure"]').addEventListener('click', () => {
+      this.runMeasurements();
     });
+    this.root.querySelectorAll('[data-basic-gate-action]').forEach((button) => {
+      button.addEventListener('click', () => this.loadGate(button.dataset.basicGateAction));
+    });
+    this.root.querySelector('[data-basic-gate-run="h"]').addEventListener('click', () => this.runHGate());
+    this.root.querySelector('[data-basic-gate-run="cx"]').addEventListener('click', () => this.runCxGate());
+    this.root.querySelector('#reset-basic-gates').addEventListener('click', () => this.resetGateLesson());
     this.root.querySelector('#next-concept').addEventListener('click', () => {
       if (this.activeIndex < CONCEPTS.length - 1) {
         this.selectConcept(CONCEPTS[this.activeIndex + 1].id);
@@ -35,10 +40,12 @@ export class ConceptBasics {
   }
 
   reset() {
-    this.gateState = 'zero';
-    this.lastGateAction = 'zero';
+    this.selectedGate = null;
+    this.gateRunResult = null;
+    this.cxHasRun = false;
+    this.measurementMode = 'single';
     this.measurements = { zero: 0, one: 0 };
-    this.renderGate();
+    this.renderGateLesson();
     this.renderMeasurements(null);
     this.selectConcept('qubit');
   }
@@ -66,72 +73,124 @@ export class ConceptBasics {
     nextButton.textContent = concept.next ? `下一个：${concept.next} →` : '';
   }
 
-  applyGate(action) {
-    this.lastGateAction = action;
-    if (action === 'x') {
-      this.gateState = 'one';
-    } else if (action === 'h') {
-      this.gateState = 'superposition';
-    } else {
-      this.gateState = 'zero';
-    }
-    this.renderGate();
-    this.animateGate(action);
+  loadGate(action) {
+    if (!['h', 'cx'].includes(action)) return;
+    this.selectedGate = action;
+    this.gateRunResult = null;
+    this.cxHasRun = false;
+    this.renderGateLesson();
   }
 
-  renderGate() {
-    this.root.dataset.qubitState = this.gateState;
-    const copy = {
-      zero: {
-        label: '|0⟩',
-        text: '从确定的 |0⟩ 状态开始；线路上还没有量子门。',
-      },
-      one: { label: '|1⟩', text: 'X 门像一次翻转：输入是 |0⟩，通过后变成确定的 |1⟩。' },
-      superposition: {
-        label: '0 或 1',
-        text: 'H 门改变了状态：现在测量可能得到 0，也可能得到 1；一次测量仍只得到一个结果。',
-      },
-    }[this.gateState];
-    this.root.querySelector('#basic-gate-state').textContent = copy.label;
-    this.root.querySelector('#basic-gate-narration').textContent = copy.text;
-    this.root.querySelectorAll('[data-basic-action]:not([data-basic-action="measure"])').forEach((button) => {
-      button.setAttribute('aria-pressed', button.dataset.basicAction === this.lastGateAction ? 'true' : 'false');
+  resetGateLesson() {
+    this.selectedGate = null;
+    this.gateRunResult = null;
+    this.cxHasRun = false;
+    this.renderGateLesson();
+  }
+
+  runHGate() {
+    if (this.selectedGate !== 'h') return;
+    this.gateRunResult = Math.random() < 0.5 ? '0' : '1';
+    const output = this.root.querySelector('#basic-h-output');
+    output.textContent = this.gateRunResult;
+    output.dataset.result = this.gateRunResult;
+    this.root.querySelector('#basic-gate-narration').innerHTML =
+      `<b>运行完成：测得 ${this.gateRunResult}。</b>每次点击都会重新准备 <code>|0⟩</code>、经过 H 门并测量，所以再次运行可能得到另一个结果。`;
+  }
+
+  runCxGate() {
+    if (this.selectedGate !== 'cx' || this.cxHasRun) return;
+    this.cxHasRun = true;
+    const outputs = [
+      this.root.querySelector('#basic-cx-output-zero'),
+      this.root.querySelector('#basic-cx-output-one'),
+    ];
+    outputs.forEach((output) => { output.dataset.result = '1'; });
+    outputs[0].textContent = '1';
+    outputs[1].textContent = '1';
+    const cxRunButton = this.root.querySelector('[data-basic-gate-run="cx"]');
+    cxRunButton.disabled = true;
+    cxRunButton.setAttribute('aria-label', 'CX 门已运行');
+    this.root.querySelector('#basic-cx-action').textContent = '已运行';
+    this.root.querySelector('#basic-gate-narration').innerHTML =
+      '<b>运行完成：测得 11。</b>控制位 q0 是 1，所以 CX 保持 q0 为 1，并把目标位 q1 从 0 翻转为 1。';
+  }
+
+  renderGateLesson() {
+    const gate = this.selectedGate || 'empty';
+    const explanations = {
+      empty: '<b>还没有加载门。</b>先选择 H 或 CX；演示区一次只显示一个门。',
+      h: '<b>H 门：</b>把确定的 <code>|0⟩</code> 变成测得 0、1 机会各一半的状态。现在点击线路中的 H 门，运行并测量一次。',
+      cx: '<b>CX 门：</b>这里准备 q0 为 <code>|1⟩</code>、q1 为 <code>|0⟩</code>。点击线路中的 CX 门，观察目标位怎样翻转并测量。',
+    };
+
+    this.root.querySelector('#basic-gate-demo').dataset.gate = gate;
+    this.root.querySelectorAll('[data-gate-view]').forEach((view) => {
+      view.hidden = view.dataset.gateView !== gate;
     });
+    this.root.querySelectorAll('[data-basic-gate-action]').forEach((button) => {
+      button.setAttribute('aria-pressed', button.dataset.basicGateAction === this.selectedGate ? 'true' : 'false');
+    });
+    const hOutput = this.root.querySelector('#basic-h-output');
+    hOutput.textContent = this.gateRunResult ?? '等待';
+    hOutput.dataset.result = this.gateRunResult ?? 'waiting';
+    const cxOutputs = [
+      this.root.querySelector('#basic-cx-output-zero'),
+      this.root.querySelector('#basic-cx-output-one'),
+    ];
+    cxOutputs.forEach((output) => {
+      output.textContent = this.cxHasRun ? '1' : '等待';
+      output.dataset.result = this.cxHasRun ? '1' : 'waiting';
+    });
+    const cxRunButton = this.root.querySelector('[data-basic-gate-run="cx"]');
+    cxRunButton.disabled = this.cxHasRun;
+    cxRunButton.setAttribute('aria-label', this.cxHasRun ? 'CX 门已运行' : '点击 CX 门，运行并测量一次');
+    this.root.querySelector('#basic-cx-action').textContent = this.cxHasRun ? '已运行' : '点击运行';
+    this.root.querySelector('#basic-gate-narration').innerHTML = explanations[gate];
   }
 
-  animateGate(action) {
-    const chip = this.root.querySelector('#basic-gate-chip');
-    const loading = this.root.querySelector('#basic-gate-loading');
-    const labels = {
-      zero: { chip: '准备', loading: '线路已重置' },
-      x: { chip: 'X', loading: 'X 门已加载' },
-      h: { chip: 'H', loading: 'H 门已加载' },
-    }[action];
-
-    chip.classList.remove('is-loading');
-    // Force a new animation even when the same gate is selected twice.
-    void chip.offsetWidth;
-    chip.dataset.gate = action === 'zero' ? 'ready' : action;
-    chip.textContent = labels.chip;
-    loading.textContent = action === 'zero' ? labels.loading : `正在加载 ${labels.chip} 门…`;
-    chip.classList.add('is-loading');
-    chip.addEventListener('animationend', () => {
-      loading.textContent = labels.loading;
-    }, { once: true });
+  runMeasurements() {
+    const shots = this.measurementMode === 'single' ? 1 : 100;
+    this.measurements = { zero: 0, one: 0 };
+    let lastResult = null;
+    for (let shot = 0; shot < shots; shot += 1) {
+      lastResult = Math.random() < 0.5 ? 'zero' : 'one';
+      this.measurements[lastResult] += 1;
+    }
+    if (this.measurementMode === 'single') this.measurementMode = 'batch';
+    this.renderMeasurements(lastResult, shots);
   }
 
-  measureOnce() {
-    const result = Math.random() < 0.5 ? 'zero' : 'one';
-    this.measurements[result] += 1;
-    this.renderMeasurements(result);
-  }
-
-  renderMeasurements(result) {
+  renderMeasurements(result, shots = 0) {
     const total = this.measurements.zero + this.measurements.one;
     const resultLabel = this.root.querySelector('#basic-measure-result');
-    resultLabel.textContent = result === null ? '等待测量' : `这一次得到 ${result === 'zero' ? '0' : '1'}`;
+    resultLabel.textContent = result === null
+      ? '还没有测量'
+      : shots === 1
+        ? `这一次得到 ${result === 'zero' ? '0' : '1'}`
+        : `100 次测量完成：0 和 1 都出现了`;
     resultLabel.dataset.result = result || 'waiting';
-    this.root.querySelector('#basic-measure-counts').textContent =
-      `已测量 ${total} 次 · 0：${this.measurements.zero} 次 · 1：${this.measurements.one} 次`;
+    this.root.querySelector('#basic-measure-counts').textContent = result === null
+      ? '先运行一次，看看单次测量会发生什么。'
+      : shots === 1
+        ? '一次只能看到一个答案。现在用 100 次测量观察比例。'
+        : `相同电路重复运行 ${total} 次，结果会接近各占一半。`;
+
+    const zeroPercent = total ? Math.round((this.measurements.zero / total) * 100) : 0;
+    const onePercent = total ? 100 - zeroPercent : 0;
+    this.root.querySelector('#basic-zero-count').textContent = `${this.measurements.zero} 次`;
+    this.root.querySelector('#basic-one-count').textContent = `${this.measurements.one} 次`;
+    this.root.querySelector('#basic-zero-percent').textContent = `${zeroPercent}%`;
+    this.root.querySelector('#basic-one-percent').textContent = `${onePercent}%`;
+    this.root.querySelector('#basic-zero-bar').style.width = `${zeroPercent}%`;
+    this.root.querySelector('#basic-one-bar').style.width = `${onePercent}%`;
+    this.root.querySelector('#basic-measure-button').innerHTML = this.measurementMode === 'single'
+      ? '先测量一次 <span>⌁</span>'
+      : '测量 100 次 <span>⌁</span>';
+    this.root.querySelector('#basic-measure-explanation').textContent = result === null
+      ? '一次测量只会得到一个答案；完成后，再用 100 次观察整体比例。'
+      : shots === 1
+        ? '刚才只出现一个结果，不代表另一个结果不可能。点击“测量 100 次”继续。'
+        : '柱状图不是固定答案；再次测量 100 次，具体次数会变化，但通常接近 50% / 50%。';
   }
 }
