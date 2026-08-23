@@ -27,6 +27,7 @@ STATIC_ASSETS = frozenset(
         "js/conversation-session.js",
         "js/journey.js",
         "js/main.js",
+        "js/markdown.js",
         "js/onboarding.js",
         "js/preferences.js",
         "js/quantum-lab.js",

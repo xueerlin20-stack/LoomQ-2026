@@ -443,6 +443,8 @@ class WebAssetsTests(unittest.TestCase):
         self.assertNotIn("explainWaitingQubit", javascript)
         self.assertIn("nextActionText", javascript)
         self.assertIn("validation.counts", javascript)
+        self.assertIn("renderMarkdown", javascript)
+        self.assertIn("document.createElement('strong')", javascript)
         self.assertIn("没有找到满足全部条件的运行平台", javascript)
         self.assertIn("data.task_type === 'recommend_backend'", javascript)
         self.assertIn("class ConversationSession", javascript)
@@ -457,6 +459,8 @@ class WebAssetsTests(unittest.TestCase):
         self.assertTrue((WEB_ROOT.parent / "web_backend" / "configuration.py").is_file())
         self.assertTrue((WEB_ROOT.parent / "web_backend" / "chat.py").is_file())
         self.assertTrue((WEB_ROOT.parent / "web_backend" / "http.py").is_file())
+        http_source = (WEB_ROOT.parent / "web_backend" / "http.py").read_text(encoding="utf-8")
+        self.assertIn('"js/markdown.js"', http_source)
 
 
 if __name__ == "__main__":

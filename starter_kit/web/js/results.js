@@ -1,11 +1,14 @@
 // DOM renderers for structured Agent responses.
 
+import { renderMarkdown } from './markdown.js';
+
 export function renderAgentResult(data, { onSuggestion } = {}) {
   const english = data.response_language === 'en';
   const article = createMessageShell('agent-message', 'LQ', 'LoomQ Agent');
   const body = article.querySelector('.message-body');
-  const summary = document.createElement('p');
-  summary.textContent = !data.ok && data.task_type === 'clarify'
+  const summary = document.createElement('div');
+  summary.className = 'markdown-body message-summary';
+  const summaryText = !data.ok && data.task_type === 'clarify'
     ? (english ? 'I need clearer information before I can continue.' : '我需要更明确的信息才能继续。')
     : !data.ok && data.task_type === 'recommend_backend'
     ? (english ? 'I could not find a platform matching every requirement.' : '没有找到满足全部条件的运行平台。')
@@ -14,6 +17,7 @@ export function renderAgentResult(data, { onSuggestion } = {}) {
     : data.backend_id
     ? (english ? 'I found a platform that matches your requirements.' : '我找到一个符合你要求的运行平台。')
     : data.display_text;
+  renderMarkdown(summary, summaryText);
   body.append(summary);
 
   if (!data.ok) {
@@ -54,8 +58,8 @@ function createMessageShell(className, avatarText, metaText) {
 
 function createErrorCard(data, english) {
   const error = document.createElement('div');
-  error.className = 'error-card';
-  error.textContent = data.message || (english ? 'The task could not be completed.' : '暂时无法完成这个任务。');
+  error.className = 'error-card markdown-body';
+  renderMarkdown(error, data.message || (english ? 'The task could not be completed.' : '暂时无法完成这个任务。'));
   return error;
 }
 

@@ -133,6 +133,19 @@ h1 em { color: var(--lime); font-weight: 400; }
 .avatar { flex: 0 0 auto; width: 36px; height: 36px; border-radius: 12px; background: var(--lime); color: #13150f; font-size: 10px; font-weight: 800; display: grid; place-items: center; letter-spacing: -.03em; }
 .user-message .avatar { background: var(--violet); color: white; }
 .message-body { min-width: 0; }
+.markdown-body { line-height: 1.72; overflow-wrap: anywhere; }
+.markdown-body > :first-child { margin-top: 0; }
+.markdown-body > :last-child { margin-bottom: 0; }
+.markdown-body p { margin: 0 0 10px; }
+.markdown-body h3, .markdown-body h4, .markdown-body h5, .markdown-body h6 { margin: 16px 0 7px; color: var(--ink); line-height: 1.4; }
+.markdown-body ul, .markdown-body ol { margin: 8px 0 12px; padding-left: 24px; }
+.markdown-body li { margin: 5px 0; padding-left: 3px; }
+.markdown-body strong { color: var(--ink); font-weight: 760; }
+.markdown-body em { color: #d7d2c9; }
+.markdown-body code { padding: 2px 5px; border: 1px solid var(--line); border-radius: 5px; background: rgba(255,255,255,.045); color: var(--lime); font: .88em ui-monospace, SFMono-Regular, Menlo, monospace; }
+.markdown-body pre { margin: 11px 0; padding: 13px 15px; overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: #0d0e11; }
+.markdown-body pre code { padding: 0; border: 0; background: transparent; color: #e8e5df; }
+.markdown-body blockquote { margin: 10px 0; padding: 7px 12px; border-left: 3px solid var(--lime); color: var(--muted); background: rgba(200,255,102,.035); }
 .message-meta { color: var(--muted); font-size: 11px; letter-spacing: .05em; text-transform: uppercase; margin: 1px 0 8px; }
 .message p { line-height: 1.7; margin: 0; }
 .user-message p { background: rgba(157,140,255,.13); border: 1px solid rgba(157,140,255,.2); border-radius: 18px 4px 18px 18px; padding: 13px 16px; white-space: pre-wrap; }
