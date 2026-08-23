@@ -52,10 +52,6 @@
     </div>
 
     <section class="workspace" aria-label="Agent 对话区">
-      <div class="conversation-toolbar">
-        <span>当前对话仅在本次打开页面期间有效</span>
-        <button id="clear-conversation" type="button">清空对话 · 重新开始</button>
-      </div>
       <div class="conversation" id="conversation" aria-live="polite">
         <article class="message agent-message intro-message">
           <div class="avatar" aria-hidden="true">LQ</div>
@@ -73,8 +69,11 @@
         <label class="sr-only" for="prompt">描述你的量子计算需求</label>
         <textarea id="prompt" rows="2" maxlength="12000" placeholder="例如：生成一个 3 比特 GHZ 态并测量全部量子比特…" required></textarea>
         <div class="composer-footer">
-          <span><kbd>Enter</kbd> 发送 · <kbd>Shift</kbd> + <kbd>Enter</kbd> 换行</span>
-          <button class="send-button" id="send" type="submit"><span>开始实验</span><span aria-hidden="true">↗</span></button>
+          <div class="composer-left-actions">
+            <button class="clear-conversation-button" id="clear-conversation" type="button">清空对话 · 重新开始</button>
+            <span><kbd>Enter</kbd> 发送 · <kbd>Shift</kbd> + <kbd>Enter</kbd> 换行</span>
+          </div>
+          <button class="send-button" id="send" type="submit"><span aria-hidden="true">↗</span></button>
         </div>
       </form>
       <p class="privacy-note">对话与电路上下文仅保存在这台电脑上的 LoomQ 会话中。</p>
