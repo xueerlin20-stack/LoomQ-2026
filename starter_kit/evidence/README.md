@@ -27,11 +27,9 @@ shots：[1000]
 平台返回的原始结果：[starter_kit/evidence/files/originq-result.json]
 任务页截图：[starter_kit/evidence/files/L1-真机/originq_1.png][starter_kit/evidence/files/L1-真机/originq_2.png][starter_kit/evidence/files/L1-真机/originq_3.png]
 ```
-# originq截图
+### originq截图
 ![originq1](files/L1-真机/originq_1.png)
-
 ![originq2](files/L1-真机/originq_3.png)
-
 ![originq3](files/L1-真机/originq_2.png)
 ```text
 平台名称：[spinq_real]
@@ -42,9 +40,8 @@ shots：[100]
 平台返回的原始结果：[starter_kit/evidence/files/spinq-result.json]
 任务页截图：[starter_kit/evidence/files/L1-真机/spinq_1.png][starter_kit/evidence/files/L1-真机/spinq_2.png]
 ```
-# spinq截图
+### spinq截图
 ![spinq1](files/L1-真机/spinq_1.png)
-
 ![spinq2](files/L1-真机/spinq_2.png)
 
 建议把文件放进 `evidence/files/`，比如：
