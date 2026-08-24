@@ -23,6 +23,7 @@ STATIC_ASSETS = frozenset(
         "styles.css",
         "js/api.js",
         "js/chat.js",
+        "js/circuit-visualizer.js",
         "js/concept-basics.js",
         "js/conversation-session.js",
         "js/journey.js",

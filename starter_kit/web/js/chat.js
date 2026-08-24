@@ -3,12 +3,13 @@
 import { renderAgentResult, renderUserMessage } from './results.js';
 
 export class ChatController {
-  constructor({ api, preferences, onboarding, journey, conversationSession }) {
+  constructor({ api, preferences, onboarding, journey, conversationSession, circuitVisualizer }) {
     this.api = api;
     this.preferences = preferences;
     this.onboarding = onboarding;
     this.journey = journey;
     this.conversationSession = conversationSession;
+    this.circuitVisualizer = circuitVisualizer;
     this.conversation = document.querySelector('#conversation');
     this.composer = document.querySelector('#composer');
     this.promptInput = document.querySelector('#prompt');
@@ -73,6 +74,9 @@ export class ChatController {
       });
       loading.remove();
       this.conversationSession.update(data);
+      if (data.qasm) {
+        this.circuitVisualizer?.render(data.qasm, data.active_artifact || {});
+      }
       this.conversation.append(renderAgentResult(data, {
         onSuggestion: (suggestion) => this.useStarterPrompt(suggestion),
       }));
@@ -109,6 +113,7 @@ export class ChatController {
     try {
       if (conversationId) await this.api.resetConversation(conversationId);
       this.conversationSession.clear();
+      this.circuitVisualizer?.clear();
       this.conversation.replaceChildren(this.introMessage.cloneNode(true));
       this.renderContext();
       this.promptInput.value = '';

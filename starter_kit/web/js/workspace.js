@@ -2,6 +2,7 @@
 
 import { api } from './api.js';
 import { ChatController } from './chat.js';
+import { CircuitVisualizer } from './circuit-visualizer.js';
 import { ConversationSession } from './conversation-session.js';
 import { JourneyProgress } from './journey.js';
 import { PreferenceStore } from './preferences.js';
@@ -9,6 +10,7 @@ import { PreferenceStore } from './preferences.js';
 const preferences = new PreferenceStore();
 const conversationSession = new ConversationSession();
 const journey = new JourneyProgress();
+const circuitVisualizer = new CircuitVisualizer(document.querySelector('#circuit-panel'));
 
 const configurationGate = {
   ready: false,
@@ -39,6 +41,7 @@ async function startWorkspace() {
     onboarding: configurationGate,
     journey,
     conversationSession,
+    circuitVisualizer,
   });
   chat.init();
   chat.focus();

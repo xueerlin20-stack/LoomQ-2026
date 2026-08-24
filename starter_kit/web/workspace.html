@@ -39,45 +39,67 @@
       <div class="journey-step" data-journey-step="3"><b>04</b><strong>继续改进</strong><small>上下文不会丢失</small></div>
     </div>
 
-    <div class="starter-grid workspace-starters" aria-label="示例任务">
-      <button class="starter-card" data-prompt="生成一个 3 比特 GHZ 态并进行全测量">
-        <span class="starter-number">01</span><strong>创建纠缠实验</strong><small>生成 3 比特 GHZ 态并运行</small>
-      </button>
-      <button class="starter-card" data-prompt="我想制备贝尔态，请修复这段代码：H q[0]; CX q[0] q[1]">
-        <span class="starter-number">02</span><strong>修复量子代码</strong><small>保持目标并自动找错</small>
-      </button>
-      <button class="starter-card" data-prompt="我要运行一个 26 比特电路，必须免费并且不能排队">
-        <span class="starter-number">03</span><strong>选择运行平台</strong><small>按规模、费用和排队筛选</small>
-      </button>
+    <div class="workspace-split">
+      <section class="workspace chat-workspace" aria-label="Agent 对话区">
+        <div class="conversation" id="conversation" aria-live="polite">
+          <article class="message agent-message intro-message">
+            <div class="avatar" aria-hidden="true">LQ</div>
+            <div class="message-body">
+              <div class="message-meta">LoomQ Agent</div>
+              <p>描述一个实验、粘贴一段错误代码，或者继续修改当前电路。我会记住这次讨论中的电路和最近上下文。</p>
+            </div>
+          </article>
+        </div>
+
+        <form class="composer" id="composer">
+          <div class="composer-prompts" aria-label="聊天快捷提示">
+            <button type="button" data-prompt="生成一个 3 比特 GHZ 态并进行全测量">
+              <span>01</span><strong>生成 GHZ 态</strong>
+            </button>
+            <button type="button" data-prompt="我想制备贝尔态，请修复这段代码：H q[0]; CX q[0] q[1]">
+              <span>02</span><strong>修复量子代码</strong>
+            </button>
+            <button type="button" data-prompt="我要运行一个 26 比特电路，必须免费并且不能排队">
+              <span>03</span><strong>筛选运行平台</strong>
+            </button>
+          </div>
+          <div class="conversation-context" id="conversation-context" hidden>
+            <span id="conversation-context-label"></span>
+          </div>
+          <label class="sr-only" for="prompt">描述你的量子计算需求</label>
+          <textarea id="prompt" rows="2" maxlength="12000" placeholder="例如：生成一个 3 比特 GHZ 态并测量全部量子比特…" required></textarea>
+          <div class="composer-footer">
+            <div class="composer-left-actions">
+              <button class="clear-conversation-button" id="clear-conversation" type="button">清空对话 · 重新开始</button>
+              <span><kbd>Enter</kbd> 发送 · <kbd>Shift</kbd> + <kbd>Enter</kbd> 换行</span>
+            </div>
+            <button class="send-button" id="send" type="submit" aria-label="发送需求"><span aria-hidden="true">↗</span></button>
+          </div>
+        </form>
+        <p class="privacy-note">对话与电路上下文仅保存在这台电脑上的 LoomQ 会话中。</p>
+      </section>
+
+      <aside class="circuit-panel" id="circuit-panel" aria-labelledby="circuit-title">
+        <header class="circuit-panel-head">
+          <div>
+            <span>CURRENT CIRCUIT</span>
+            <h2 id="circuit-title">当前电路</h2>
+          </div>
+          <div class="circuit-summary" id="circuit-summary" hidden></div>
+        </header>
+        <div class="circuit-empty" id="circuit-empty">
+          <span aria-hidden="true">|0⟩</span>
+          <strong>等待当前电路</strong>
+        </div>
+        <div class="circuit-view" id="circuit-view" hidden>
+          <div class="circuit-caption">
+            <strong id="circuit-name">量子电路</strong>
+            <span id="circuit-version"></span>
+          </div>
+          <div class="circuit-scroll" id="circuit-scroll" tabindex="0" aria-label="量子电路图"></div>
+        </div>
+      </aside>
     </div>
-
-    <section class="workspace" aria-label="Agent 对话区">
-      <div class="conversation" id="conversation" aria-live="polite">
-        <article class="message agent-message intro-message">
-          <div class="avatar" aria-hidden="true">LQ</div>
-          <div class="message-body">
-            <div class="message-meta">LoomQ Agent</div>
-            <p>描述一个实验、粘贴一段错误代码，或者继续修改当前电路。我会记住这次讨论中的电路和最近上下文。</p>
-          </div>
-        </article>
-      </div>
-
-      <form class="composer" id="composer">
-        <div class="conversation-context" id="conversation-context" hidden>
-          <span id="conversation-context-label"></span>
-        </div>
-        <label class="sr-only" for="prompt">描述你的量子计算需求</label>
-        <textarea id="prompt" rows="2" maxlength="12000" placeholder="例如：生成一个 3 比特 GHZ 态并测量全部量子比特…" required></textarea>
-        <div class="composer-footer">
-          <div class="composer-left-actions">
-            <button class="clear-conversation-button" id="clear-conversation" type="button">清空对话 · 重新开始</button>
-            <span><kbd>Enter</kbd> 发送 · <kbd>Shift</kbd> + <kbd>Enter</kbd> 换行</span>
-          </div>
-          <button class="send-button" id="send" type="submit"><span aria-hidden="true">↗</span></button>
-        </div>
-      </form>
-      <p class="privacy-note">对话与电路上下文仅保存在这台电脑上的 LoomQ 会话中。</p>
-    </section>
   </main>
 
   <template id="loading-template">

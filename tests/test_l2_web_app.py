@@ -351,6 +351,14 @@ class WebAssetsTests(unittest.TestCase):
         self.assertIn('id="composer"', workspace)
         self.assertIn('id="conversation-context"', workspace)
         self.assertIn('id="clear-conversation"', workspace)
+        self.assertIn('id="circuit-panel"', workspace)
+        self.assertIn('id="circuit-scroll"', workspace)
+        self.assertIn('class="composer-prompts"', workspace)
+        self.assertNotIn('class="starter-grid workspace-starters"', workspace)
+        self.assertGreater(
+            workspace.index('class="composer-prompts"'),
+            workspace.index('id="composer"'),
+        )
         self.assertIn("清空对话 · 重新开始", workspace)
         self.assertIn('class="composer-left-actions"', workspace)
         self.assertIn('class="clear-conversation-button"', workspace)
@@ -456,6 +464,8 @@ class WebAssetsTests(unittest.TestCase):
         self.assertIn("没有找到满足全部条件的运行平台", javascript)
         self.assertIn("data.task_type === 'recommend_backend'", javascript)
         self.assertIn("class ConversationSession", javascript)
+        self.assertIn("class CircuitVisualizer", javascript)
+        self.assertIn("parseQasmCircuit", javascript)
         self.assertIn("conversation_id", javascript)
         self.assertNotIn("setItem(STORAGE_KEY", javascript)
         self.assertIn("@media (max-width: 760px)", css)
@@ -469,6 +479,7 @@ class WebAssetsTests(unittest.TestCase):
         self.assertTrue((WEB_ROOT.parent / "web_backend" / "http.py").is_file())
         http_source = (WEB_ROOT.parent / "web_backend" / "http.py").read_text(encoding="utf-8")
         self.assertIn('"js/markdown.js"', http_source)
+        self.assertIn('"js/circuit-visualizer.js"', http_source)
 
 
 if __name__ == "__main__":
