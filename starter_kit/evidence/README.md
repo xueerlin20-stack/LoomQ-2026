@@ -25,8 +25,12 @@
 shots：[1000]
 实际执行的 QASM：[starter_kit/circuits/bell.qasm]
 平台返回的原始结果：[starter_kit/evidence/files/originq-result.json]
-任务页截图：[starter_kit/evidence/files/真机结果/originq_1.jpeg][starter_kit/evidence/files/真机结果/originq_2.jpeg][starter_kit/evidence/files/真机结果/originq_3.jpeg]
+任务页截图：[starter_kit/evidence/files/L1-真机/originq_1.png][starter_kit/evidence/files/L1-真机/originq_2.png][starter_kit/evidence/files/L1-真机/originq_3.png]
 ```
+# originq截图
+![originq1](starter_kit/evidence/files/L1-真机/originq_1.png)
+![originq2](starter_kit/evidence/files/L1-真机/originq_2.png)
+![originq3](starter_kit/evidence/files/L1-真机/originq_3.png)
 ```text
 平台名称：[spinq_real]
 平台 job ID：[G-260809-0019]
@@ -34,8 +38,11 @@ shots：[1000]
 shots：[100]
 实际执行的 QASM：[starter_kit/circuits/bell.qasm]
 平台返回的原始结果：[starter_kit/evidence/files/spinq-result.json]
-任务页截图：[starter_kit/evidence/files/真机结果/spinq_1.jpeg][starter_kit/evidence/files/真机结果/spinq_2.jpeg]
+任务页截图：[starter_kit/evidence/files/L1-真机/spinq_1.png][starter_kit/evidence/files/L1-真机/spinq_2.png]
 ```
+# spinq截图
+![spinq1](starter_kit/evidence/files/L1-真机/spinq_1.png)
+![spinq2](starter_kit/evidence/files/L1-真机/spinq_2.png)
 
 建议把文件放进 `evidence/files/`，比如：
 
