@@ -82,6 +82,16 @@ class ConversationStore:
             conversation.updated_at = now
             return conversation
 
+    def get(self, conversation_id: str) -> Optional[Conversation]:
+        """Return an existing live conversation without creating a new one."""
+        with self._lock:
+            now = self._clock()
+            self._discard_expired(now)
+            conversation = self._items.get(conversation_id)
+            if conversation is not None:
+                conversation.updated_at = now
+            return conversation
+
     def record(
         self,
         conversation: Conversation,

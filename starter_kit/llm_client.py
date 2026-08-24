@@ -73,6 +73,16 @@ def chat_completion(
         with urllib.request.urlopen(request, timeout=timeout) as response:
             return json.loads(response.read())
     except urllib.error.HTTPError as exc:
-        raise RuntimeError("LoomQ L2 API returned HTTP %d" % exc.code) from exc
+        messages = {
+            401: (
+                "模型服务鉴权失败（HTTP 401）。请打开“运行配置”，确认 API Key "
+                "有效，并且与 API 根地址属于同一服务，然后重新保存。"
+            ),
+            403: "模型服务拒绝访问（HTTP 403）。请检查 API Key 权限和账户额度。",
+            429: "模型服务请求过于频繁或额度不足（HTTP 429），请稍后重试或检查账户额度。",
+        }
+        raise RuntimeError(
+            messages.get(exc.code, "模型服务请求失败（HTTP %d），请稍后重试。" % exc.code)
+        ) from exc
     except urllib.error.URLError as exc:
         raise RuntimeError("LoomQ L2 API is unreachable") from exc

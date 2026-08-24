@@ -70,7 +70,7 @@ function createQasmCard(data, english) {
   head.className = 'result-head';
   const badge = document.createElement('span');
   badge.className = 'validation-badge';
-  badge.textContent = english ? 'Executed & validated' : '已运行并验证';
+  badge.textContent = english ? 'Generated QASM' : '已生成 QASM';
   const copy = document.createElement('button');
   copy.className = 'copy-button';
   copy.type = 'button';
@@ -84,16 +84,6 @@ function createQasmCard(data, english) {
   code.textContent = data.qasm;
   pre.append(code);
   card.append(pre);
-
-  const validation = data.validation || {};
-  const panel = document.createElement('div');
-  panel.className = 'run-panel';
-  const summary = document.createElement('div');
-  summary.className = 'run-summary';
-  summary.textContent = validation.explanation || (english ? 'The circuit ran successfully.' : '电路已成功运行。');
-  panel.append(summary);
-  if (validation.counts) panel.append(createCounts(validation.counts, validation.shots));
-  card.append(panel);
   return card;
 }
 
@@ -103,32 +93,6 @@ async function copyQasm(button, qasm, english) {
   window.setTimeout(() => {
     button.textContent = english ? 'Copy QASM' : '复制 QASM';
   }, 1400);
-}
-
-function createCounts(counts, shots) {
-  const container = document.createElement('div');
-  container.className = 'counts';
-  Object.entries(counts)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 12)
-    .forEach(([state, count]) => {
-      const percent = shots ? (count / shots) * 100 : 0;
-      const row = document.createElement('div');
-      row.className = 'count-row';
-      const label = document.createElement('span');
-      label.textContent = state;
-      const track = document.createElement('div');
-      track.className = 'count-track';
-      const fill = document.createElement('div');
-      fill.className = 'count-fill';
-      fill.style.width = `${Math.max(1, percent)}%`;
-      track.append(fill);
-      const value = document.createElement('span');
-      value.textContent = `${percent.toFixed(1)}%`;
-      row.append(label, track, value);
-      container.append(row);
-    });
-  return container;
 }
 
 function createBackendCard(data, english) {

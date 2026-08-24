@@ -136,6 +136,7 @@ export class CircuitVisualizer {
     this.scroll.scrollLeft = 0;
     this.root.classList.remove('is-empty');
     this.root.classList.add('has-circuit');
+    this.root.dispatchEvent(new CustomEvent('loomq:circuit-ready'));
   }
 
   clear() {
@@ -148,6 +149,7 @@ export class CircuitVisualizer {
     this.empty.hidden = false;
     this.root.classList.remove('has-circuit');
     this.root.classList.add('is-empty');
+    this.root.dispatchEvent(new CustomEvent('loomq:circuit-clear'));
   }
 
   showEmpty(message) {

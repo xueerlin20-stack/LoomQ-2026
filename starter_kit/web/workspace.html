@@ -97,6 +97,25 @@
             <span id="circuit-version"></span>
           </div>
           <div class="circuit-scroll" id="circuit-scroll" tabindex="0" aria-label="量子电路图"></div>
+          <section class="circuit-runner" id="circuit-runner" aria-labelledby="circuit-runner-title">
+            <div class="circuit-runner-controls">
+              <div>
+                <span>LOCAL SIMULATOR</span>
+                <strong id="circuit-runner-title">本地测量</strong>
+              </div>
+              <label>
+                <span>Shots</span>
+                <select id="circuit-shots" aria-label="测量次数">
+                  <option value="256">256</option>
+                  <option value="1024" selected>1024</option>
+                  <option value="4096">4096</option>
+                </select>
+              </label>
+              <button id="run-current-circuit" type="button">运行测量 <span aria-hidden="true">▶</span></button>
+            </div>
+            <p class="circuit-runner-status" id="circuit-runner-status" aria-live="polite">使用 SpinQ 本地模拟器，不会提交到量子真机。</p>
+            <div class="circuit-runner-results" id="circuit-runner-results" hidden></div>
+          </section>
         </div>
       </aside>
     </div>

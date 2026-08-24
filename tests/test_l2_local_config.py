@@ -82,6 +82,18 @@ class L2LocalConfigurationTests(unittest.TestCase):
         mocked_agent.assert_not_called()
         self.assertIn("配置已加载", output.getvalue())
 
+    def test_bundled_environment_preserves_the_original_entrypoint(self):
+        with mock.patch.object(run_l2.importlib.util, "find_spec", return_value=None), \
+             mock.patch.object(run_l2.Path, "is_file", return_value=True), \
+             mock.patch.object(run_l2.os, "execv") as execv, \
+             mock.patch.object(run_l2.sys, "argv", ["starter_kit/web_app.py", "--no-browser"]), \
+             mock.patch.object(run_l2.sys, "executable", "/usr/bin/python3"):
+            run_l2.reexec_with_bundled_venv_if_needed()
+
+        arguments = execv.call_args.args[1]
+        self.assertTrue(arguments[1].endswith("starter_kit/web_app.py"))
+        self.assertEqual(arguments[-1], "--no-browser")
+
     def test_unknown_environment_key_is_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / ".env.l2"

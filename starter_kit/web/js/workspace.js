@@ -2,6 +2,7 @@
 
 import { api } from './api.js';
 import { ChatController } from './chat.js';
+import { CircuitRunner } from './circuit-runner.js';
 import { CircuitVisualizer } from './circuit-visualizer.js';
 import { ConversationSession } from './conversation-session.js';
 import { JourneyProgress } from './journey.js';
@@ -11,6 +12,11 @@ const preferences = new PreferenceStore();
 const conversationSession = new ConversationSession();
 const journey = new JourneyProgress();
 const circuitVisualizer = new CircuitVisualizer(document.querySelector('#circuit-panel'));
+const circuitRunner = new CircuitRunner({
+  root: document.querySelector('#circuit-panel'),
+  api,
+  conversationSession,
+});
 
 const configurationGate = {
   ready: false,
@@ -43,6 +49,7 @@ async function startWorkspace() {
     conversationSession,
     circuitVisualizer,
   });
+  circuitRunner.init();
   chat.init();
   chat.focus();
 }

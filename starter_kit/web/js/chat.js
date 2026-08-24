@@ -17,6 +17,7 @@ export class ChatController {
     this.loadingTemplate = document.querySelector('#loading-template');
     this.contextBar = document.querySelector('#conversation-context');
     this.contextLabel = document.querySelector('#conversation-context-label');
+    this.starterPrompts = document.querySelector('.composer-prompts');
     this.clearContextButton = document.querySelector('#clear-conversation');
     this.introMessage = this.conversation.querySelector('.intro-message').cloneNode(true);
   }
@@ -56,6 +57,7 @@ export class ChatController {
     }
 
     this.conversation.append(renderUserMessage(prompt));
+    this.starterPrompts.hidden = true;
     this.journey.setActive(1);
     this.promptInput.value = '';
     this.setBusy(true);
@@ -84,11 +86,15 @@ export class ChatController {
       this.journey.setActive(3);
     } catch (error) {
       loading.remove();
+      const message = error.message || '暂时无法连接 LoomQ Agent，请稍后再试。';
       this.conversation.append(renderAgentResult({
         ok: false,
         display_text: '连接或运行遇到问题。',
-        message: error.message || '暂时无法连接 LoomQ Agent，请稍后再试。',
+        message,
       }));
+      if (/鉴权失败|HTTP 401/.test(message)) {
+        this.onboarding.open('config', true);
+      }
     } finally {
       window.clearTimeout(runStageTimer);
       this.setBusy(false);
@@ -118,6 +124,7 @@ export class ChatController {
       this.renderContext();
       this.promptInput.value = '';
       this.promptInput.placeholder = '例如：生成一个 3 比特 GHZ 态并测量全部量子比特…';
+      this.starterPrompts.hidden = false;
       this.journey.setActive(0);
     } catch (error) {
       this.conversation.append(renderAgentResult({

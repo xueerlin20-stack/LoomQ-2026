@@ -53,7 +53,10 @@ def reexec_with_bundled_venv_if_needed() -> None:
         pass
     os.execv(
         str(bundled_python),
-        [str(bundled_python), str(Path(__file__).resolve()), *sys.argv[1:]],
+        # Preserve the program the user actually launched. This helper is also
+        # reused by web_app.py; hard-coding run_l2.py here silently turned a web
+        # launch into the CLI after switching interpreters.
+        [str(bundled_python), str(Path(sys.argv[0]).resolve()), *sys.argv[1:]],
     )
 
 

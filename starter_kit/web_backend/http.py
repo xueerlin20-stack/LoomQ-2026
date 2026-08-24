@@ -23,6 +23,7 @@ STATIC_ASSETS = frozenset(
         "styles.css",
         "js/api.js",
         "js/chat.js",
+        "js/circuit-runner.js",
         "js/circuit-visualizer.js",
         "js/concept-basics.js",
         "js/conversation-session.js",
@@ -56,6 +57,7 @@ class LoomQRequestHandler(BaseHTTPRequestHandler):
     def do_POST(self):
         routes = {
             "/api/chat": self.app.handle_chat,
+            "/api/circuit/run": self.app.run_current_circuit,
             "/api/config": self.app.save_configuration,
             "/api/conversation/reset": self.app.reset_conversation,
         }
@@ -70,6 +72,11 @@ class LoomQRequestHandler(BaseHTTPRequestHandler):
             return
         except (json.JSONDecodeError, ValueError) as exc:
             self._json_error(HTTPStatus.BAD_REQUEST, str(exc))
+            return
+        except RuntimeError as exc:
+            # Upstream model/provider failures are actionable service errors, not
+            # Python crashes. Keep implementation details out of the browser UI.
+            self._json_error(HTTPStatus.BAD_GATEWAY, str(exc))
             return
         except Exception as exc:
             self._json_error(

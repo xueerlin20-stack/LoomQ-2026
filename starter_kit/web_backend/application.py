@@ -40,6 +40,9 @@ class WebApplication:
     def handle_chat(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         return self.chat.execute(payload)
 
+    def run_current_circuit(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        return self.chat.run_local(payload)
+
     def reset_conversation(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         return self.chat.reset(payload)
 

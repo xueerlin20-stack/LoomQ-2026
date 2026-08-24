@@ -38,6 +38,14 @@ export const api = {
     });
   },
 
+  runCurrentCircuit(payload) {
+    return requestJson('/api/circuit/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+  },
+
   resetConversation(conversationId) {
     return requestJson('/api/conversation/reset', {
       method: 'POST',

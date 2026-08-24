@@ -233,6 +233,68 @@ class WebApplicationTests(unittest.TestCase):
         self.assertEqual(rerun["qasm"], result.qasm)
         self.assertIn(result.qasm, agent.prompts[1])
 
+    def test_current_circuit_can_run_locally_without_another_model_call(self):
+        result = AgentResult(
+            ok=True,
+            task_type="generate_qasm",
+            qasm="OPENQASM 2.0;\nqreg q[2];\ncreg c[2];\nmeasure q -> c;",
+            explanation="Bell 电路。",
+        )
+        agent = FakeAgent(result)
+        executions = []
+
+        def execute(qasm, target, shots):
+            executions.append((qasm, target, shots))
+            return {
+                "backend": "spinq",
+                "job_id": "local-test",
+                "shots": shots,
+                "counts": {"00": shots // 2, "11": shots - shots // 2},
+            }
+
+        app = WebApplication(
+            chat=ChatService(agent_factory=lambda: agent, local_executor=execute)
+        )
+        created = app.handle_chat({"prompt": "生成 Bell 电路"})
+        artifact = created["active_artifact"]
+
+        measured = app.run_current_circuit(
+            {
+                "conversation_id": created["conversation_id"],
+                "active_artifact_id": artifact["id"],
+                "expected_version": artifact["version"],
+                "shots": 1024,
+            }
+        )
+
+        self.assertEqual(measured["counts"], {"00": 512, "11": 512})
+        self.assertEqual(executions, [(result.qasm, "spinq", 1024)])
+        self.assertEqual(len(agent.prompts), 1)
+
+    def test_local_run_rejects_stale_circuit_and_invalid_shots(self):
+        result = AgentResult(
+            ok=True,
+            task_type="generate_qasm",
+            qasm="OPENQASM 2.0;\nqreg q[1];",
+            explanation="单比特电路。",
+        )
+        app = WebApplication(
+            chat=ChatService(agent_factory=lambda: FakeAgent(result), local_executor=mock.Mock())
+        )
+        created = app.handle_chat({"prompt": "生成单比特电路"})
+        artifact = created["active_artifact"]
+        payload = {
+            "conversation_id": created["conversation_id"],
+            "active_artifact_id": artifact["id"],
+            "expected_version": artifact["version"],
+            "shots": 1024,
+        }
+
+        with self.assertRaisesRegex(ValueError, "最新版本"):
+            app.run_current_circuit({**payload, "expected_version": 99})
+        with self.assertRaisesRegex(ValueError, "1 到 8192"):
+            app.run_current_circuit({**payload, "shots": 0})
+
     def test_stale_circuit_version_is_rejected_before_agent_call(self):
         result = AgentResult(
             ok=True,
@@ -440,6 +502,7 @@ class WebAssetsTests(unittest.TestCase):
         self.assertIn("平等获得援助", index)
         self.assertIn("审计记录", index)
         self.assertIn("/api/chat", javascript)
+        self.assertIn("/api/circuit/run", javascript)
         self.assertIn("/api/config", javascript)
         self.assertIn("/api/conversation/reset", javascript)
         self.assertIn("loomq.quantumProfile", javascript)
@@ -458,7 +521,10 @@ class WebAssetsTests(unittest.TestCase):
         self.assertIn("reset()", javascript)
         self.assertNotIn("explainWaitingQubit", javascript)
         self.assertIn("nextActionText", javascript)
-        self.assertIn("validation.counts", javascript)
+        self.assertNotIn("validation.counts", javascript)
+        self.assertIn("this.starterPrompts.hidden = true", javascript)
+        self.assertIn("this.starterPrompts.hidden = false", javascript)
+        self.assertIn("已生成 QASM", javascript)
         self.assertIn("renderMarkdown", javascript)
         self.assertIn("document.createElement('strong')", javascript)
         self.assertIn("没有找到满足全部条件的运行平台", javascript)
@@ -480,6 +546,7 @@ class WebAssetsTests(unittest.TestCase):
         http_source = (WEB_ROOT.parent / "web_backend" / "http.py").read_text(encoding="utf-8")
         self.assertIn('"js/markdown.js"', http_source)
         self.assertIn('"js/circuit-visualizer.js"', http_source)
+        self.assertIn('"js/circuit-runner.js"', http_source)
 
 
 if __name__ == "__main__":

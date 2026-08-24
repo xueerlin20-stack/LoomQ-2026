@@ -35,16 +35,77 @@ class ChatService:
     def __init__(
         self,
         agent_factory: Optional[Callable[[], Any]] = None,
+        local_executor: Optional[Callable[[str, str, int], Dict[str, Any]]] = None,
         backend_presenter: Optional[BackendPresenter] = None,
         conversation_store: Optional[ConversationStore] = None,
         action_classifier: Optional[ConversationActionClassifier] = None,
         context_builder: Optional[ConversationContextBuilder] = None,
     ):
         self.agent_factory = agent_factory or create_agent
+        self.local_executor = local_executor
         self.backend_presenter = backend_presenter or BackendPresenter()
         self.conversation_store = conversation_store or ConversationStore()
         self.action_classifier = action_classifier or ConversationActionClassifier()
         self.context_builder = context_builder or ConversationContextBuilder()
+
+    def run_local(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        """Measure the current server-owned circuit on the local simulator."""
+        if not isinstance(payload, dict):
+            raise ValueError("request body must be a JSON object")
+        conversation_id = payload.get("conversation_id")
+        artifact_id = payload.get("active_artifact_id")
+        expected_version = payload.get("expected_version")
+        shots = payload.get("shots", 1024)
+        if not isinstance(conversation_id, str) or not conversation_id.strip():
+            raise ValueError("缺少当前会话，请先生成一个电路")
+        if not isinstance(artifact_id, str) or not artifact_id.strip():
+            raise ValueError("缺少当前电路，请先生成一个电路")
+        if (
+            not isinstance(expected_version, int)
+            or isinstance(expected_version, bool)
+            or expected_version < 1
+        ):
+            raise ValueError("当前电路版本无效")
+        if (
+            not isinstance(shots, int)
+            or isinstance(shots, bool)
+            or shots < 1
+            or shots > 8192
+        ):
+            raise ValueError("shots 必须是 1 到 8192 之间的整数")
+
+        conversation = self.conversation_store.get(conversation_id)
+        if conversation is None or conversation.active_artifact is None:
+            raise ValueError("当前会话或电路已失效，请重新生成电路")
+        artifact = conversation.active_artifact
+        if artifact.artifact_id != artifact_id or artifact.version != expected_version:
+            raise ValueError("当前电路已变化，请基于最新版本重新运行")
+
+        if self.local_executor is None:
+            try:
+                from ..adapter import run
+            except ImportError:
+                from adapter import run  # type: ignore
+            executor = run
+        else:
+            executor = self.local_executor
+        execution = executor(artifact.qasm, "spinq", shots)
+        counts = execution.get("counts")
+        actual_shots = execution.get("shots")
+        if (
+            not isinstance(counts, dict)
+            or not counts
+            or not isinstance(actual_shots, int)
+            or sum(counts.values()) != actual_shots
+        ):
+            raise RuntimeError("本地模拟器返回了无效的测量结果")
+        return {
+            "ok": True,
+            "backend": execution.get("backend", "spinq"),
+            "job_id": execution.get("job_id", ""),
+            "shots": actual_shots,
+            "counts": counts,
+        }
 
     def execute(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         prompt, profile, explain_concepts = self._validate(payload)

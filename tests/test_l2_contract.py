@@ -41,6 +41,16 @@ class CompatibleAPIHandler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
 
+class UnauthorizedAPIHandler(BaseHTTPRequestHandler):
+    def log_message(self, *_args):
+        return
+
+    def do_POST(self):
+        self.send_response(401)
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+
+
 class PublicL2ContractTests(unittest.TestCase):
     def test_adapter_supports_standard_package_import(self):
         adapter = importlib.import_module("starter_kit.adapter")
@@ -84,6 +94,24 @@ class PublicL2ContractTests(unittest.TestCase):
         self.assertEqual(response["choices"][0]["message"]["content"], "ok")
         self.assertEqual(CompatibleAPIHandler.request_payload["model"], "local-model")
         self.assertEqual(CompatibleAPIHandler.request_payload["temperature"], 0)
+
+    def test_unauthorized_error_explains_how_to_repair_configuration(self):
+        server = ThreadingHTTPServer(("127.0.0.1", 0), UnauthorizedAPIHandler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            environment = {
+                "LOOMQ_LLM_BASE_URL": "http://127.0.0.1:%d" % server.server_port,
+                "LOOMQ_LLM_API_KEY": "invalid-key",
+                "LOOMQ_LLM_MODEL": "local-model",
+            }
+            with mock.patch.dict(os.environ, environment, clear=True):
+                with self.assertRaisesRegex(RuntimeError, "鉴权失败.*运行配置"):
+                    load_client().chat_completion([{"role": "user", "content": "hello"}])
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=2)
 
 
 if __name__ == "__main__":
