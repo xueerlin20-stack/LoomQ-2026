@@ -8,37 +8,38 @@
 
 把要申报项目的方框改成 `[x]`，并填写对应内容：
 
-- [ ] L1 真机
+- [x] L1 真机
 - [x] L2 交互体验
-- [ ] 工程与产品化
+- [x] 工程与产品化
 - [x] 自定义量子 RISC-V Bonus
-- [ ] 新手引导与视觉叙事 Bonus
+- [x] 新手引导与视觉叙事 Bonus
 
 ## L1 真机
 
 每个有效真机平台计 5 分，最多两个平台。模拟器不计真机分。每个平台复制并填写一次下面的信息：
 
 ```text
-平台名称：[originq_real]
-平台 job ID：[9AF78C69756E262144E19CC897A4D328]
-运行时间：[2026-08-09T13:06:32.512572+00:00]
-shots：[1000]
-实际执行的 QASM：[starter_kit/circuits/bell.qasm]
-平台返回的原始结果：[starter_kit/evidence/files/originq-result.json]
-任务页截图：[starter_kit/evidence/files/L1-真机/originq_1.png][starter_kit/evidence/files/L1-真机/originq_2.png][starter_kit/evidence/files/L1-真机/originq_3.png]
+平台名称：本源量子 本源悟空180-2
+平台 job ID：9AF78C69756E262144E19CC897A4D328
+运行时间：2026-08-09T13:06:32.512572+00:00
+shots：1000
+实际执行的 QASM：starter_kit/circuits/bell.qasm
+平台返回的原始结果：starter_kit/evidence/files/L1-真机/originq-raw-result.json
+统一结果：starter_kit/evidence/files/L1-真机/originq-result.json
+任务页截图：starter_kit/evidence/files/L1-真机/originq_1.png、starter_kit/evidence/files/L1-真机/originq_2.png、starter_kit/evidence/files/L1-真机/originq_3.png
 ```
 ### originq截图
-![originq1](files/L1-真机/originq_1.png)
-![originq2](files/L1-真机/originq_3.png)
-![originq3](files/L1-真机/originq_2.png)
+![originq1](files/L1-真机/originq_1.png) ![originq2](files/L1-真机/originq_3.png) ![originq3](files/L1-真机/originq_2.png)
+
 ```text
-平台名称：[spinq_real]
-平台 job ID：[G-260809-0019]
-运行时间：[2026-08-09T10:36:14.465306+00:00]
-shots：[100]
-实际执行的 QASM：[starter_kit/circuits/bell.qasm]
-平台返回的原始结果：[starter_kit/evidence/files/spinq-result.json]
-任务页截图：[starter_kit/evidence/files/L1-真机/spinq_1.png][starter_kit/evidence/files/L1-真机/spinq_2.png]
+平台名称：量旋云 2比特核磁量子计算机
+平台 job ID：G-260809-0019
+运行时间：2026-08-09T10:36:14.465306+00:00
+shots：100
+实际执行的 QASM：starter_kit/circuits/bell.qasm
+平台返回的原始结果：starter_kit/evidence/files/L1-真机/spinq-raw-result.json
+统一结果：starter_kit/evidence/files/L1-真机/spinq-result.json
+任务页截图：starter_kit/evidence/files/L1-真机/spinq_1.png、starter_kit/evidence/files/L1-真机/spinq_2.png
 ```
 ### spinq截图
 ![spinq1](files/L1-真机/spinq_1.png)
@@ -85,6 +86,15 @@ starter_kit/evidence/files/L2-web-chatbot
 ```
 
 工作人员会按最终 commit 实际构建和启动，并检查文档与代码是否一致、产品是否真的降低了量子计算的使用门槛。
+### 必答题：你的工具让哪一类原本进不来的人，第一次能用上量子计算？（提供Web 界面、无代码引导等佐证最佳）
+```text
+我们的工具把量子计算的适用人群从专业研究者和程序员，拓展到没有物理、数学或编程背景的普通用户，包括学生、教师、其他行业从业者以及对新技术感兴趣的公众。
+LoomQ L2 提供完整的 Web 无代码入口。首次进入时，用户可以根据自己的熟悉程度选择讲解深度；新手引导会依次介绍量子比特、量子门、电路和测量，并通过可点击的 H、CX 和测量操作，带领用户亲手完成第一个 Bell 纠缠实验。
+新手入门文档：starter_kit/docs/量子计算基础与LoomQ分层说明.md
+web界面：starter_kit/evidence/files/L2-web-chatbot/web主页.png
+web界面新手引导：starter_kit/evidence/files/L2-web-chatbot/初学者引导1.png、starter_kit/evidence/files/L2-web-chatbot/初学者引导2.png、starter_kit/evidence/files/L2-web-chatbot/初学者引导3.png
+运行环境无代码引导：starter_kit/evidence/files/L2-web-chatbot/运行环境设置.png
+```
 
 ## 自定义量子 RISC-V Bonus
 
