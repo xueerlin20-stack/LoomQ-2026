@@ -30,9 +30,9 @@ shots：[1000]
 # originq截图
 ![originq1](files/L1-真机/originq_1.png)
 
-![originq2](files/L1-真机/originq_2.png)
+![originq2](files/L1-真机/originq_3.png)
 
-![originq3](files/L1-真机/originq_3.png)
+![originq3](files/L1-真机/originq_2.png)
 ```text
 平台名称：[spinq_real]
 平台 job ID：[G-260809-0019]
